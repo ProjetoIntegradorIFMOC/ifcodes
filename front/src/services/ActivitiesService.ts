@@ -12,7 +12,7 @@ export async function getActivityById(
   activityId: string
 ): Promise<Activity | undefined> {
   await new Promise((resolve) => setTimeout(resolve, 200));
-  return fakePageActivities.items.find((a) => a.id === activityId);
+  return fakePageActivities.items.find((a) => a.id === Number(activityId));
 }
 
 /**
@@ -53,4 +53,105 @@ export async function getAllActivities(): Promise<Page<Activity>> {
     total: 0,
     pageSize: 0,
   } as Page<Activity>;
+}
+
+export async function getActivitiesByClass(turmaId: number): Promise<Activity[]> {
+  try {
+    const response = await axios.get(`http://localhost:8000/api/atividades?turma_id=${turmaId}`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+    });
+
+    const activities: Array<Activity> = [];
+
+    response.data.forEach((atividade: any) => {
+      activities.push({
+        id: atividade.id,
+        problemId: atividade.problema_id,
+        dueDate: atividade.data_entrega,
+        status: "pending",
+        title: "",
+      });
+    });
+
+    return activities;
+  } catch (error) {
+    console.error("Erro ao carregar atividades da turma:", error);
+    return [];
+  }
+}
+
+export async function createActivity(activityData: {
+  problema_id: number;
+  data_entrega: string;
+  turma_id: number;
+}): Promise<Activity | null> {
+  try {
+    const response = await axios.post("http://localhost:8000/api/atividades", activityData, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+    });
+
+    const atividade = response.data;
+    return {
+      id: atividade.id,
+      problemId: atividade.problema_id,
+      dueDate: atividade.data_entrega,
+      status: "pending",
+      title: "",
+    };
+  } catch (error) {
+    console.error("Erro ao criar atividade:", error);
+    return null;
+  }
+}
+
+export async function updateActivity(id: number, activityData: {
+  problema_id: number;
+  data_entrega: string;
+  turma_id: number;
+}): Promise<Activity | null> {
+  try {
+    const response = await axios.put(`http://localhost:8000/api/atividades/${id}`, activityData, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+    });
+
+    const atividade = response.data;
+    return {
+      id: atividade.id,
+      problemId: atividade.problema_id,
+      dueDate: atividade.data_entrega,
+      status: "pending",
+      title: "",
+    };
+  } catch (error) {
+    console.error("Erro ao atualizar atividade:", error);
+    return null;
+  }
+}
+
+export async function deleteActivity(id: number): Promise<boolean> {
+  try {
+    await axios.delete(`http://localhost:8000/api/atividades/${id}`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+    });
+    return true;
+  } catch (error) {
+    console.error("Erro ao deletar atividade:", error);
+    return false;
+  }
 }
