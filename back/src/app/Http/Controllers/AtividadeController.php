@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\ProblemaService;
 use App\Models\Atividade;
 use Exception;
 use Illuminate\Http\Request;
@@ -20,7 +21,7 @@ class AtividadeController extends Controller
      *      operationId="getAtividadesList",
      *      tags={"Atividades"},
      *      summary="Lista todas as atividades",
-     *      description="Retorna uma lista de todas as atividades cadastradas com seus respectivos problemas detalhados.",
+     *      description="Retorna uma lista de todas as atividades cadastradas com seus respectivos problemas detalhados, sobre uma turma.",
      *      @OA\Response(
      *          response=200,
      *          description="Operação bem-sucedida",
@@ -31,13 +32,32 @@ class AtividadeController extends Controller
      *      )
      * )
      */
-    public function index()
+    public function index(Request $request)
     {
-        $atividades = Atividade::all();
+        $query = Atividade::query();
+
+        if ($request->filled('turma_id')) {
+            $query->where('turma_id', $request->turma_id);
+        }
+
+        $atividades = $query->get();
 
         return response()->json($atividades);
     }
 
+    public function atividadeDetalhe(Request $request)
+    {
+        $request->validate([
+            'atividade_id' => 'required|integer|exists:atividades,id',
+        ]);
+
+        $atividade = Atividade::findOrFail($request->atividade_id);
+
+        // Carrega o problema completo via service
+        $atividade->problema = $problemaService->buscarPorId($atividade->problema_id);
+
+        return response()->json($atividade);
+    }
     /**
      * @OA\Post(
      *      path="/api/atividades",
@@ -132,6 +152,23 @@ class AtividadeController extends Controller
      */
     public function destroy(Atividade $atividade)
     {
-        //
+        DB::beginTransaction();
+
+        try {
+            $atividade->delete();
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Atividade removida com sucesso.'
+            ], Response::HTTP_OK);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'message' => 'Erro ao remover a atividade.',
+                'error'   => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 }

@@ -8,7 +8,8 @@ use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
-class ProblemaService {
+class ProblemaService
+{
 
     private $_problema;
     private $_casos_teste = [];
@@ -24,24 +25,25 @@ class ProblemaService {
             $this->_problema = new Problema($request->all());
         }
 
-        if($request->has('casos_teste') && !empty($request->input('casos_teste'))){
+        if ($request->has('casos_teste') && !empty($request->input('casos_teste'))) {
             $this->criaCasosTeste($request->input('casos_teste'));
         }
     }
 
     public function criaCasosTeste(array $casos_teste)
     {
-        foreach($casos_teste as $caso_teste){
+        foreach ($casos_teste as $caso_teste) {
             $caso = new CasoTeste($caso_teste);
             $this->_casos_teste[] = $caso;
         }
     }
 
-    public function salvar(){
+    public function salvar()
+    {
         DB::beginTransaction();
 
-        try{
-            if(!$this->_problema->save()){
+        try {
+            if (!$this->_problema->save()) {
                 DB::rollBack();
                 return false;
             }
@@ -50,16 +52,15 @@ class ProblemaService {
                 CasoTeste::where('problema_id', $this->_problema->id)->delete();
             }
 
-            foreach($this->_casos_teste as $caso_teste){
+            foreach ($this->_casos_teste as $caso_teste) {
                 $caso_teste->problema_id = $this->_problema->id;
 
-                if(!$caso_teste->save()){
-                    DB::rollBack();
+                if (!$caso_teste->save()) {
+                    DB::save();
                     return false;
                 }
             }
-
-        } catch(Exception $e){
+        } catch (Exception $e) {
             DB::rollBack();
             return false;
         }
@@ -68,7 +69,8 @@ class ProblemaService {
         return true;
     }
 
-    public function getProblema(){
+    public function getProblema()
+    {
         return $this->_problema;
     }
 
@@ -91,10 +93,10 @@ class ProblemaService {
     public static function excluir($id)
     {
         DB::beginTransaction();
-        
+
         try {
             $problema = Problema::find($id);
-            
+
             if (!$problema) {
                 DB::rollBack();
                 return false;
@@ -102,10 +104,10 @@ class ProblemaService {
 
             // Remove casos de teste associados
             CasoTeste::where('problema_id', $id)->delete();
-            
+
             // Remove o problema
             $problema->delete();
-            
+
             DB::commit();
             return true;
         } catch (Exception $e) {
