@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::table('atividade', function (Blueprint $table) {
             $table->foreignId('turma_id')->constrained('turma')->onDelete('cascade')->after('id');
+            $table->timestamp('data_entrega')->change();
         });
     }
 
@@ -23,6 +24,8 @@ return new class extends Migration
     {
         Schema::table('atividade', function (Blueprint $table) {
             $table->dropForeign(['turma_id']);
+            $table->dropColumn(['turma_id']);
+            $table->date('data_entrega')->change();
         });
     }
 };
