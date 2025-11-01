@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('atividade', function (Blueprint $table) {
-            $table->foreignId('turma_id')->constrained('turma')->onDelete('cascade')->after('id');
+            $table->foreignId('turma_id')->nullable()->constrained('turma')->onDelete('cascade')->after('id');
             $table->timestamp('data_entrega')->change();
         });
     }
