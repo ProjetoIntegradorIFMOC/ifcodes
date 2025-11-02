@@ -14,6 +14,7 @@ use Throwable;
 class SubmissaoService
 {
     private Submissao $_submissao;
+    private const LINGUAGEM_C = 50;
 
     public function __construct(Request $request)
     {
@@ -21,7 +22,7 @@ class SubmissaoService
 
         $this->_submissao = new Submissao(array_merge($dados, [
             'data_submissao' => Date::now(),
-            'linguagem' => 50,
+            'linguagem' => self::LINGUAGEM_C,
         ]));
     }
 
