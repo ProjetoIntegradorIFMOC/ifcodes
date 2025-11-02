@@ -51,9 +51,18 @@ class Problema extends Model
         'enunciado',
         'tempo_limite',
         'memoria_limite',
+        'created_by',
     ];
+
+    protected $with = [];
+    protected $appends = [];
 
     public function casosTeste(){
         return $this->hasMany(CasoTeste::class, 'problema_id');
+    }
+    
+    protected function serializeDate(\DateTimeInterface $date)
+    {
+        return $date->format('Y-m-d H:i:s');
     }
 }

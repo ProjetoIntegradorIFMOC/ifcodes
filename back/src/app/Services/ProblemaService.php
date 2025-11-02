@@ -12,13 +12,20 @@ class ProblemaService {
 
     private $_problema;
     private $_casos_teste = [];
+    private $_is_update = false;
 
-    public function __construct(Request $request)
+    public function __construct(Request $request, Problema $problema = null)
     {
-        $this->_problema = new Problema($request->all());
+        if ($problema) {
+            $this->_problema = $problema;
+            $this->_problema->fill($request->all());
+            $this->_is_update = true;
+        } else {
+            $this->_problema = new Problema($request->all());
+        }
 
-        if(isset($request['casos_teste'])){
-            $this->criaCasosTeste($request['casos_teste']);
+        if($request->has('casos_teste') && !empty($request->input('casos_teste'))){
+            $this->criaCasosTeste($request->input('casos_teste'));
         }
     }
 
@@ -37,6 +44,10 @@ class ProblemaService {
             if(!$this->_problema->save()){
                 DB::rollBack();
                 return false;
+            }
+
+            if ($this->_is_update) {
+                CasoTeste::where('problema_id', $this->_problema->id)->delete();
             }
 
             foreach($this->_casos_teste as $caso_teste){
@@ -59,5 +70,47 @@ class ProblemaService {
 
     public function getProblema(){
         return $this->_problema;
+    }
+
+    public static function listarTodos($user_id = null)
+    {
+        $query = Problema::with('casosTeste');
+
+        if ($user_id) {
+            $query->where('created_by', $user_id);
+        }
+
+        return $query->get();
+    }
+
+    public static function buscarPorId($id)
+    {
+        return Problema::with('casosTeste')->find($id);
+    }
+
+    public static function excluir($id)
+    {
+        DB::beginTransaction();
+        
+        try {
+            $problema = Problema::find($id);
+            
+            if (!$problema) {
+                DB::rollBack();
+                return false;
+            }
+
+            // Remove casos de teste associados
+            CasoTeste::where('problema_id', $id)->delete();
+            
+            // Remove o problema
+            $problema->delete();
+            
+            DB::commit();
+            return true;
+        } catch (Exception $e) {
+            DB::rollBack();
+            return false;
+        }
     }
 }

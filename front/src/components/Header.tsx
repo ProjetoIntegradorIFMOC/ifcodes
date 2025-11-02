@@ -40,8 +40,9 @@ export default function Header() {
   // Hook para obter o usuário e suas roles
   const { user } = useUser();
 
-  // Verifica se o usuário é admin
+  // Verifica se o usuário é admin ou professor
   const isAdmin = user?.roles?.includes("admin") || false;
+  const isProfessor = user?.roles?.includes("professor") || false;
 
   // Define os itens de navegação baseado nas permissões
   const navigationItems: NavigationItem[] = [
@@ -50,6 +51,7 @@ export default function Header() {
     { to: "/submissions", label: "Submissões" },
     { to: "/classes", label: "Turmas" },
     // Só mostra o item "Gerenciar" se o usuário for admin
+<<<<<<< HEAD
     ...(isAdmin
       ? [
           {
@@ -61,6 +63,22 @@ export default function Header() {
           },
         ]
       : []),
+=======
+    ...(isAdmin ? [{
+      label: "Gerenciar",
+      submenu: [
+        { to: "/students", label: "Gerenciar Alunos" },
+        { to: "/teachers", label: "Gerenciar Professores" }
+      ]
+    }] : []),
+    // Mostra o item "Problemas" se o usuário for admin ou professor
+    ...(isAdmin || isProfessor ? [{
+      label: "Problemas",
+      submenu: [
+        { to: "/problems", label: "Gerenciar Problemas" }
+      ]
+    }] : []),
+>>>>>>> upstream/visualizacao-perfil
   ];
 
   // Alterna o menu mobile
