@@ -205,9 +205,6 @@ function SecuritySettings({ user, onChangePasswordClick }: SecuritySettingsProps
           <p>
             <strong>ID Interno:</strong> {user.id}
           </p>
-          <p>
-            <strong>Data de Criação:</strong> Não disponível
-          </p>
         </div>
       </div>
     </div>
