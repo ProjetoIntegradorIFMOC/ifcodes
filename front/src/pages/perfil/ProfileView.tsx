@@ -1,18 +1,13 @@
-//import { useUser } from "@/context/UserContext";
-import { User, Mail, Zap, Loader2, Key } from "lucide-react";
+// Descomentar essa linha quando não for mais simulação
+// import { useUser } from "@/context/UserContext";
+import type { User } from "@/types";
+import { User as UserIcon, Mail, Zap, Loader2, Key } from "lucide-react";
+// Remover essa linha quando não for mais simulação
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 
-// --- Interface do Utilizador ---
-interface UserData {
-  id: number;
-  name: string;
-  email: string;
-  roles: string[];
-}
-
 // --- Simulação de Usuário (Remover posteriormente) ---
-const mockUser: UserData = {
+const mockUser: User = {
   id: 12345,
   name: "João Silva",
   email: "joao.silva@exemplo.com",
@@ -20,7 +15,7 @@ const mockUser: UserData = {
 };
 
 function useUser() {
-  const [user, setUser] = useState<UserData | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -123,7 +118,7 @@ function ErrorState({ onNavigateLogin }: ErrorStateProps) {
  * Exibe o avatar, nome, email e roles do utilizador.
  */
 interface ProfileHeaderProps {
-  user: UserData;
+  user: User;
 }
 
 function ProfileHeader({ user }: ProfileHeaderProps) {
@@ -134,7 +129,7 @@ function ProfileHeader({ user }: ProfileHeaderProps) {
         {user.name ? (
           user.name[0].toUpperCase()
         ) : (
-          <User className="w-10 h-10" />
+          <UserIcon className="w-10 h-10" />
         )}
       </div>
 
@@ -169,7 +164,7 @@ function ProfileHeader({ user }: ProfileHeaderProps) {
  * Exibe as ações de segurança (como alterar senha) e informações técnicas.
  */
 interface SecuritySettingsProps {
-  user: UserData;
+  user: User;
   onChangePasswordClick: () => void;
 }
 
