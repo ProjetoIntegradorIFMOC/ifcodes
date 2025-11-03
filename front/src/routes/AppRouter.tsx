@@ -16,7 +16,7 @@ import Problems from "@/pages/problems/Problems";
 import RequireAuth from "@/pages/RequireAuth";
 import RequireRole from "@/pages/RequireRole";
 import { BrowserRouter, Route, Routes } from "react-router";
-import ProfileView from "@/pages/perfil/visualizacao-perfil";
+import ProfileView from "@/pages/perfil/ProfileView";
 
 export default function AppRouter() {
   return (
