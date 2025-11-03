@@ -1,6 +1,7 @@
 //import { useUser } from "@/context/UserContext";
 import { User, Mail, Zap, Loader2, Key } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router";
 
 // Interface do utilizador
 interface UserData {
@@ -46,6 +47,7 @@ function useUser() {
 export default function ProfileView() {
   // A chamada ao useUser agora funciona com a simulação local, remover essa linha posteriormente
   const { user, loading } = useUser();
+  const navigate = useNavigate();
 
   //carrega stado
   if (loading) {
@@ -127,7 +129,7 @@ export default function ProfileView() {
               <Key className="w-5 h-5 text-red-600 mr-4" />
               <div>
                 <p className="text-base font-medium text-gray-700">
-                  Alterar Palavra-passe
+                  Alterar senha
                 </p>
                 <p className="text-sm text-gray-500">
                   Mantenha a sua conta segura, atualizando a sua password
@@ -135,12 +137,13 @@ export default function ProfileView() {
                 </p>
               </div>
             </div>
-            <a
-              href="/change-password"
+            <button
+              type="button"
+              onClick={() => navigate('/change-password')}
               className="px-4 py-2 text-sm font-semibold rounded-lg text-white bg-red-600 hover:bg-red-700 transition-colors shadow-md"
             >
               Mudar
-            </a>
+            </button>
           </div>
 
           {/* Detalhes Técnicos */}
