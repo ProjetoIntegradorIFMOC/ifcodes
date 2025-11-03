@@ -73,6 +73,10 @@ export default function ProfileView() {
           Ocorreu um problema ao carregar os dados do utilizador. Por favor,
           tente iniciar a sessão novamente.
         </p>
+        <button type="button" onClick={() => navigate('/login')} 
+        className="mt-4 px-4 py-2 text-sm font-semibold rounded-lg text-white bg-purple-600 hover:bg-purple-700">
+          Ir para Login
+        </button>
       </div>
     );
   }
