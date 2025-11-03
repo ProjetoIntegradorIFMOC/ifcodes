@@ -48,7 +48,7 @@ const parseInputDate = (value: string | undefined): Date | null => {
 };
 
 const CustomInput = forwardRef<HTMLInputElement, any>(
-  ({ value, onClick, onChange, placeholderText, onChangeRaw }, ref) => {
+  ({ value, onClick, onChange, placeholderText, onChangeRaw, onBlur }, ref) => {
     const [inputValue, setInputValue] = useState(value || "");
 
     useEffect(() => {
@@ -60,10 +60,11 @@ const CustomInput = forwardRef<HTMLInputElement, any>(
       const maskedValue = applyDateTimeMask(newValue);
       
       setInputValue(maskedValue);
-      
-      if (onChangeRaw) {
-        const syntheticEvent = { ...e, target: { ...e.target, value: maskedValue } };
-        onChangeRaw(syntheticEvent);
+    };
+
+    const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+      if (onBlur) {
+        onBlur(e);
       }
     };
 
@@ -81,6 +82,7 @@ const CustomInput = forwardRef<HTMLInputElement, any>(
           value={inputValue}
           onChange={handleChange}
           onFocus={handleFocus}
+          onBlur={handleBlur}
           ref={ref}
           placeholder={placeholderText}
           maxLength={16}
@@ -108,7 +110,7 @@ export function DateTimePicker({
     onChange(date);
   };
 
-  const handleChangeRaw = (e: React.FocusEvent<HTMLInputElement>) => {
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     const inputValue = e.target.value;
     const parsedDate = parseInputDate(inputValue);
     
@@ -117,16 +119,20 @@ export function DateTimePicker({
     }
   };
 
+  const filterPassedTime = () => {
+    return true;
+  };
+
   return (
     <div className={className}>
       <DatePicker
         selected={selected}
         onChange={handleChange}
-        onChangeRaw={handleChangeRaw}
+        onBlur={handleBlur}
         onMonthChange={setCurrentMonth}
         showTimeSelect
         timeFormat="HH:mm"
-        timeIntervals={15}
+        timeIntervals={10}
         timeCaption="Hora"
         dateFormat="dd/MM/yyyy HH:mm"
         minDate={minDate}
@@ -143,6 +149,8 @@ export function DateTimePicker({
         enableTabLoop={false}
         autoComplete="off"
         fixedHeight
+        filterTime={filterPassedTime}
+        strictParsing={false}
         renderCustomHeader={({
           date,
           changeYear,
