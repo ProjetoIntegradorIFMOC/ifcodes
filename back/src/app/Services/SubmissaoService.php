@@ -35,8 +35,7 @@ class SubmissaoService
 
         try {
             if (!$this->_submissao->save()) {
-                DB::rollBack();
-                return false;
+                throw new Exception("Erro ao salvar submissão.");
             }
             // TODO: Solução temporária. É preciso tratar erros de submissão no futuro.
             $respostas = Judge0::criarSubmissao($this->_submissao);
@@ -50,8 +49,7 @@ class SubmissaoService
                 ]);
 
                 if (!$casoTeste->save()) {
-                    DB::rollBack();
-                    return false;
+                    throw new Exception("Erro ao salvar caso de teste.");
                 }
             }
         } catch (Exception $e) {
