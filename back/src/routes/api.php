@@ -6,6 +6,7 @@ use App\Http\Controllers\ProblemaController;
 use App\Http\Controllers\SubmissaoController;
 use App\Http\Controllers\ProfessorController;
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Auth\ForgotPasswordTempController; 
 use App\Http\Controllers\AlunoController;
 use App\Http\Controllers\TurmaController;
 use Illuminate\Support\Facades\Route;
@@ -29,6 +30,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user/roles', [AuthController::class, 'roles']);
     Route::get('/user/permissions', [AuthController::class, 'permissions']);
     Route::post('/user/change-password', [AuthController::class, 'changePassword']);
+    Route::post('/forgot-password-temp', [ForgotPasswordTempController::class, 'sendTempPassword']);
 
     // Rotas de recursos da API
     Route::apiResource('atividades', AtividadeController::class);
