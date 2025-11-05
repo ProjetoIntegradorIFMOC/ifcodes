@@ -37,7 +37,7 @@ class CheckSubmissionStatusJob implements ShouldQueue
     {
         $submissao = Submissao::with('correcoes')->find($this->submissaoId);
 
-        if (!$submissao) {
+        if (is_null($submissao)) {
             Log::warning('Submissão não encontrada ao verificar status.', [
                 'submissao_id' => $this->submissaoId,
             ]);
@@ -62,7 +62,7 @@ class CheckSubmissionStatusJob implements ShouldQueue
             /** @var Correcao|null $correcao */
             $correcao = $submissao->correcoes->firstWhere('token', $resultado['token']);
 
-            if (!$correcao) {
+            if (is_null($correcao)) {
                 Log::warning('Correção não encontrada para token retornado pelo Judge0.', [
                     'submissao_id' => $this->submissaoId,
                     'token' => $resultado['token'],

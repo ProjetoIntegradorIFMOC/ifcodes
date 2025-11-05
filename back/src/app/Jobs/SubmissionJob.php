@@ -38,7 +38,7 @@ class SubmissionJob implements ShouldQueue
     {
         $submissao = Submissao::find($this->submissaoId);
 
-        if (!$submissao) {
+        if (is_null($submissao)) {
             Log::warning('Submissão não encontrada ao processar SubmissionJob.', [
                 'submissao_id' => $this->submissaoId,
             ]);
