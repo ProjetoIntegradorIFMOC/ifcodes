@@ -11,6 +11,7 @@ use App\Lib\Dicionarios\Status;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Throwable;
+use Carbon\Carbon;
 
 class SubmissaoService
 {
@@ -34,7 +35,10 @@ class SubmissaoService
      */
     public function salvar(): bool
     {
-        if (!$this->_submissao->save()) {
+        $dataEntrega = Carbon::parse($this->_submissao->atividade->data_entrega);
+        $dataSubmissao = Carbon::parse($this->_submissao->data_submissao);
+
+        if ($dataEntrega->lt($dataSubmissao) || !$this->_submissao->save()) {
             return false;
         }
 
