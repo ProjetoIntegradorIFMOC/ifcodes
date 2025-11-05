@@ -11,6 +11,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
+use App\Lib\Dicionarios\Status;
 use Throwable;
 
 class CheckSubmissionStatusJob implements ShouldQueue
@@ -75,6 +76,10 @@ class CheckSubmissionStatusJob implements ShouldQueue
             if (in_array($statusId, self::PENDING_STATUSES, true)) {
                 $possuiPendentes = true;
                 continue;
+            } elseif ($statusId != STATUS::ACEITA) {
+                $submissao->status_correcao_id = $statusId;
+                $submissao->save();
+                return;
             }
 
             $correcao->status_correcao_id = $statusId;
@@ -87,11 +92,18 @@ class CheckSubmissionStatusJob implements ShouldQueue
                     'submissao_id' => $this->submissaoId,
                 ]);
 
+                $submissao->status_correcao_id = STATUS::TEMPO_LIMITE_EXCEDIDO;
+                $submissao->save();
+
                 return;
             }
 
             CheckSubmissionStatusJob::dispatch($this->submissaoId, $this->remainingAttempts - 1)
                 ->delay(now()->addSeconds(self::POLLING_DELAY_SECONDS));
+        } else {
+            $submissao->status_correcao_id = Status::ACEITA;
+            $submissao->save();
+            return;
         }
     }
 }

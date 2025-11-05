@@ -12,6 +12,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Lib\Dicionarios\Status;
 use Throwable;
 
 class SubmissionJob implements ShouldQueue
@@ -56,6 +57,9 @@ class SubmissionJob implements ShouldQueue
 
             throw $exception;
         }
+
+        $submissao->status_correcao_id = Status::EM_PROCESSAMENTO;
+        $submissao->save();
 
         try {
             DB::transaction(function () use ($respostas, $submissao) {
