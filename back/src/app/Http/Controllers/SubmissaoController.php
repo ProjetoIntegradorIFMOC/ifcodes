@@ -141,24 +141,46 @@ class SubmissaoController extends Controller
         return response()->json($status);
     }
 
-//    /**
-//     * Update the specified resource in storage.
-//     */
-//    public function update(Request $request, Problema $submissao)
-//    {
-//
-//    }
-//    /**
-//     * Remove the specified resource from storage.
-//     */
-//    public function destroy(Submissao $submissao)
-//    {
-//        try{
-//            $submissao->delete();
-//        } catch(Exception $e){
-//            return response()->json(['Erro ao apagar.'], 400);
-//        }
-//
-//        return response()->json(['Apagado com sucesso!']);
-//    }
+    public function getSubmissionByUser(Request $request, int $atividade)
+    {
+        $userId = $request->user()->id;
+
+        $submissoes = Submissao::where('atividade_id', $atividade)
+            ->where('user_id', $userId)
+            ->orderByDesc('data_submissao')
+            ->paginate(10);
+
+        return response()->json([
+            'atividade_id' => $atividade,
+            'user_id' => $userId,
+            'submissoes' => $submissoes->items(),
+            'paginacao' => [
+                'pagina_atual' => $submissoes->currentPage(),
+                'por_pagina' => $submissoes->perPage(),
+                'total' => $submissoes->total(),
+                'ultima_pagina' => $submissoes->lastPage(),
+            ],
+        ]);
+    }
+
+    //    /**
+    //     * Update the specified resource in storage.
+    //     */
+    //    public function update(Request $request, Problema $submissao)
+    //    {
+    //
+    //    }
+    //    /**
+    //     * Remove the specified resource from storage.
+    //     */
+    //    public function destroy(Submissao $submissao)
+    //    {
+    //        try{
+    //            $submissao->delete();
+    //        } catch(Exception $e){
+    //            return response()->json(['Erro ao apagar.'], 400);
+    //        }
+    //
+    //        return response()->json(['Apagado com sucesso!']);
+    //    }
 }
