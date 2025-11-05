@@ -8,6 +8,7 @@ use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use App\Lib\Dicionarios\Status;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
@@ -23,7 +24,7 @@ class SubmissaoService
         $this->_submissao = new Submissao(array_merge($dados, [
             'data_submissao' => Date::now(),
             'linguagem' => self::LINGUAGEM_C,
-            'user_id' => auth()->id(),
+            'user_id' => Auth::id(),
             'status_correcao_id' => Status::NA_FILA,
         ]));
     }
