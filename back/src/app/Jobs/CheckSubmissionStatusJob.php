@@ -59,11 +59,10 @@ class CheckSubmissionStatusJob implements ShouldQueue
         $possuiPendentes = false;
 
         foreach ($resultados as $resultado) {
-            /** @var Correcao|null $correcao */
             $correcao = $submissao->correcoes->firstWhere('token', $resultado['token']);
 
             if (is_null($correcao)) {
-                Log::warning('Correção não encontrada para token retornado pelo Judge0.', [
+                Log::warning('Correção não encontrada por token retornado pelo Judge0.', [
                     'submissao_id' => $this->submissaoId,
                     'token' => $resultado['token'],
                 ]);
