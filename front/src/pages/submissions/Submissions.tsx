@@ -89,41 +89,7 @@ function StatusBadge({ status }: StatusBadgeProps) {
   );
 }
 
-// Formata a data de envio e retorna string relativa (ex: "2h atrás")
-function formatDate(dateString: string) {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffTime = now.getTime() - date.getTime();
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-  const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
-  const diffMinutes = Math.floor(diffTime / (1000 * 60));
-
-  const formatted = date.toLocaleString("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-
-  let relative = "";
-
-  if (diffMinutes < 1) {
-    relative = "Agora mesmo";
-  } else if (diffMinutes < 60) {
-    relative = `${diffMinutes}min atrás`;
-  } else if (diffHours < 24) {
-    relative = `${diffHours}h atrás`;
-  } else if (diffDays === 1) {
-    relative = "Ontem";
-  } else if (diffDays < 7) {
-    relative = `${diffDays} dias atrás`;
-  } else {
-    relative = `${Math.floor(diffDays / 7)} semanas atrás`;
-  }
-
-  return { formatted, relative };
-}
+// note: relative formatting removed from this file; table shows only date
 
 // Skeleton de loading exibido enquanto os dados são carregados
 function LoadingSkeleton() {
@@ -374,7 +340,6 @@ export default function Submissions() {
             </TableHeader>
             <TableBody>
               {sortedSubmissions.map((submission) => {
-                const dateInfo = formatDate(submission.dateSubmitted);
                 // mostra apenas a data (sem horário) na tabela principal
                 const formattedDateOnly = new Date(
                   submission.dateSubmitted
@@ -411,9 +376,6 @@ export default function Submissions() {
                       <div className="flex flex-col">
                         <span className="text-gray-900 font-medium">
                           {formattedDateOnly}
-                        </span>
-                        <span className="text-xs text-gray-500">
-                          {dateInfo.relative}
                         </span>
                       </div>
                     </TableCell>

@@ -390,8 +390,15 @@ export default function SubmissionsDetails() {
     );
   }
 
-  const submissionDate = formatDate(submission.dateSubmitted);
   const dueDate = formatDate(selectedActivity.dueDate);
+  // mostra apenas a data (sem horário) no cartão de detalhes
+  const formattedSubmissionDateOnly = new Date(
+    submission.dateSubmitted
+  ).toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
 
   // Cálculo de estatísticas dos casos de teste
   // const testStats = {
@@ -462,11 +469,9 @@ export default function SubmissionsDetails() {
               <Calendar className="w-5 h-5 mx-auto mb-1" />
               <div className="text-sm font-medium">Enviado em</div>
               <div className="text-lg font-bold">
-                {submissionDate.formatted}
+                {formattedSubmissionDateOnly}
               </div>
-              <div className="text-xs text-blue-200">
-                {submissionDate.relative}
-              </div>
+              {/* relativa removida - não exibir 'Agora mesmo' nem '7h atrás' */}
             </div>
           </div>
         </div>
@@ -531,11 +536,10 @@ export default function SubmissionsDetails() {
               Prazo de Entrega
             </label>
             <div className="mt-1">
-              <div className="text-lg font-semibold text-gray-900">
-                {dueDate.formatted}
+                <div className="text-lg font-semibold text-gray-900">
+                  {dueDate.formatted}
+                </div>
               </div>
-              <div className="text-sm text-gray-500">{dueDate.relative}</div>
-            </div>
           </div>
           <div>
             <label className="text-sm font-medium text-gray-600">
