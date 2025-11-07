@@ -21,8 +21,14 @@ export async function getActivityById(
  */
 export async function getAllActivities(): Promise<Page<Activity>> {
   try {
-    const response = await axios.get("http://localhost:8000/api/atividades");
-    console.log("resposta", response.data);
+    const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/atividades`, {
+    headers: {
+        Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+    });
+
 
     const activities: Array<Activity> = [];
 
@@ -32,7 +38,6 @@ export async function getAllActivities(): Promise<Page<Activity>> {
         problemId: atividade.problema_id,
         dueDate: atividade.data_entrega,
         status: "pending",
-        title: "",
       });
     });
 
@@ -44,7 +49,11 @@ export async function getAllActivities(): Promise<Page<Activity>> {
       pageSize: activities.length,
     } as Page<Activity>;
   } catch (error) {
-    console.log("erro", error);
+    console.error("Erro ao buscar atividades:", error);
+    if (axios.isAxiosError(error)) {
+      console.error("Status:", error.response?.status);
+      console.error("Data:", error.response?.data);
+    }
   }
   return {
     items: [],
@@ -57,7 +66,7 @@ export async function getAllActivities(): Promise<Page<Activity>> {
 
 export async function getActivitiesByClass(turmaId: number): Promise<Activity[]> {
   try {
-    const response = await axios.get(`http://localhost:8000/api/atividades?turma_id=${turmaId}`, {
+    const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/atividades?turma_id=${turmaId}`, {
       headers: {
         Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
         'Content-Type': 'application/json',
@@ -73,7 +82,6 @@ export async function getActivitiesByClass(turmaId: number): Promise<Activity[]>
         problemId: atividade.problema_id,
         dueDate: atividade.data_entrega,
         status: "pending",
-        title: "",
       });
     });
 
@@ -90,7 +98,7 @@ export async function createActivity(activityData: {
   turma_id: number;
 }): Promise<Activity | null> {
   try {
-    const response = await axios.post("http://localhost:8000/api/atividades", activityData, {
+    const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/atividades`, activityData, {
       headers: {
         Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
         'Content-Type': 'application/json',
@@ -104,7 +112,6 @@ export async function createActivity(activityData: {
       problemId: atividade.problema_id,
       dueDate: atividade.data_entrega,
       status: "pending",
-      title: "",
     };
   } catch (error) {
     console.error("Erro ao criar atividade:", error);
@@ -118,7 +125,7 @@ export async function updateActivity(id: number, activityData: {
   turma_id: number;
 }): Promise<Activity | null> {
   try {
-    const response = await axios.put(`http://localhost:8000/api/atividades/${id}`, activityData, {
+    const response = await axios.put(`${import.meta.env.VITE_API_URL}/api/atividades/${id}`, activityData, {
       headers: {
         Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
         'Content-Type': 'application/json',
@@ -132,7 +139,6 @@ export async function updateActivity(id: number, activityData: {
       problemId: atividade.problema_id,
       dueDate: atividade.data_entrega,
       status: "pending",
-      title: "",
     };
   } catch (error) {
     console.error("Erro ao atualizar atividade:", error);
@@ -142,7 +148,7 @@ export async function updateActivity(id: number, activityData: {
 
 export async function deleteActivity(id: number): Promise<boolean> {
   try {
-    await axios.delete(`http://localhost:8000/api/atividades/${id}`, {
+    await axios.delete(`${import.meta.env.VITE_API_URL}/api/atividades/${id}`, {
       headers: {
         Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
         'Content-Type': 'application/json',
