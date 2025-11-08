@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\Submissao;
 use App\Services\SubmissaoService;
 use Exception;
+use App\Http\Requests\SubmissaoRequest;
 use Illuminate\Http\Request;
 use Throwable;
+use App\Lib\Dicionarios\Status;
 
 /**
  * @OA\Tag(
@@ -35,9 +37,48 @@ class SubmissaoController extends Controller
      */
     public function index()
     {
-        $submissoes = Submissao::all();
+        $userId = auth()->id();
+        
+        $submissoes = Submissao::with(['atividade.problema', 'correcoes'])
+            ->where('user_id', $userId)
+            ->orderByDesc('data_submissao')
+            ->get();
 
-        return response()->json($submissoes);
+        $submissoesFormatted = collect($submissoes)->map(function (Submissao $submissao) {
+            $dados = $submissao->toArray();
+            
+            // Calcula o status real baseado nas correções
+            $statusFinal = Status::ACEITA; // Assume aceito
+            
+            if ($submissao->correcoes->isNotEmpty()) {
+                foreach ($submissao->correcoes as $correcao) {
+                    // Se encontrar algum erro, usa esse status
+                    if ($correcao->status_correcao_id && $correcao->status_correcao_id != Status::ACEITA) {
+                        $statusFinal = $correcao->status_correcao_id;
+                        break;
+                    }
+                }
+            } else {
+                // Se não tem correções, usa o status da submissão
+                $statusFinal = $submissao->status_correcao_id;
+            }
+            
+            $statusInfo = Status::get((int) $statusFinal) ?? null;
+
+            $dados['status'] = $statusInfo['nome'] ?? null;
+            $dados['status_descricao'] = $statusInfo['descricao'] ?? null;
+            
+            // Adiciona informações do problema
+            if ($submissao->atividade && $submissao->atividade->problema) {
+                $dados['problema_titulo'] = $submissao->atividade->problema->titulo;
+            }
+
+            unset($dados['status_correcao_id']);
+            unset($dados['correcoes']); // Remove correções do retorno
+            return $dados;
+        })->all();
+
+        return response()->json($submissoesFormatted);
     }
 
     /**
@@ -75,7 +116,7 @@ class SubmissaoController extends Controller
      *      )
      * )
      */
-    public function store(Request $request)
+    public function store(SubmissaoRequest $request)
     {
         $submissaoService = new SubmissaoService($request);
 
@@ -140,24 +181,78 @@ class SubmissaoController extends Controller
         return response()->json($status);
     }
 
-//    /**
-//     * Update the specified resource in storage.
-//     */
-//    public function update(Request $request, Problema $submissao)
-//    {
-//
-//    }
-//    /**
-//     * Remove the specified resource from storage.
-//     */
-//    public function destroy(Submissao $submissao)
-//    {
-//        try{
-//            $submissao->delete();
-//        } catch(Exception $e){
-//            return response()->json(['Erro ao apagar.'], 400);
-//        }
-//
-//        return response()->json(['Apagado com sucesso!']);
-//    }
+    public function getSubmissionByUser(Request $request, int $atividade)
+    {
+        $userId = $request->user()->id;
+
+        $submissoes = Submissao::with('correcoes')
+            ->where('atividade_id', $atividade)
+            ->where('user_id', $userId)
+            ->orderByDesc('data_submissao')
+            ->paginate(10);
+
+        $submissoesFormatted = collect($submissoes->items())->map(function (Submissao $submissao) {
+            $dados = $submissao->toArray();
+            
+            // Calcula o status real baseado nas correções
+            $statusFinal = Status::ACEITA; // Assume aceito
+            
+            if ($submissao->correcoes->isNotEmpty()) {
+                foreach ($submissao->correcoes as $correcao) {
+                    // Se encontrar algum erro, usa esse status
+                    if ($correcao->status_correcao_id && $correcao->status_correcao_id != Status::ACEITA) {
+                        $statusFinal = $correcao->status_correcao_id;
+                        break;
+                    }
+                }
+            } else {
+                // Se não tem correções, usa o status da submissão
+                $statusFinal = $submissao->status_correcao_id;
+            }
+            
+            $statusInfo = Status::get((int) $statusFinal) ?? null;
+
+            $dados['status'] = $statusInfo['nome'] ?? null;
+            $dados['status_descricao'] = $statusInfo['descricao'] ?? null;
+
+            unset($dados['status_correcao_id']);
+            unset($dados['correcoes']); // Remove correções do retorno
+            return $dados;
+        })->all();
+
+        $response = [
+            'atividade_id' => $atividade,
+            'user_id' => $userId,
+            'submissoes' => $submissoesFormatted,
+            'paginacao' => [
+                'pagina_atual' => $submissoes->currentPage(),
+                'por_pagina' => $submissoes->perPage(),
+                'total' => $submissoes->total(),
+                'ultima_pagina' => $submissoes->lastPage(),
+            ],
+        ];
+
+        return response()->json($response);
+    }
+
+    //    /**
+    //     * Update the specified resource in storage.
+    //     */
+    //    public function update(Request $request, Problema $submissao)
+    //    {
+    //
+    //    }
+    //    /**
+    //     * Remove the specified resource from storage.
+    //     */
+    //    public function destroy(Submissao $submissao)
+    //    {
+    //        try{
+    //            $submissao->delete();
+    //        } catch(Exception $e){
+    //            return response()->json(['Erro ao apagar.'], 400);
+    //        }
+    //
+    //        return response()->json(['Apagado com sucesso!']);
+    //    }
 }

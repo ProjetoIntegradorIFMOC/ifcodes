@@ -7,14 +7,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/table";
-import { getAllActivities } from "@/services/ActivitiesService";
 import { getProblemById } from "@/services/ProblemsServices";
 import {
   getSubmissionsByActivityId,
   postSubmission,
 } from "@/services/SubmissionsService";
 import type { Activity, Problem, Submission } from "@/types";
-import { use, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import {
   Calendar,
@@ -30,20 +29,22 @@ import {
   Target,
   ArrowRight,
   Loader2,
+  AlertCircle,
 } from "lucide-react";
 import { CodeSubmissionComponent } from "../../components/CodeSubmission";
 import { useData } from "@/context/DataContext";
+import Loading from "@/components/Loading";
 
 // Configuração dos possíveis status das submissões (exibição e estilização)
 const statusConfig = {
-  accepted: {
+  passed: {
     label: "Aceito",
     icon: CheckCircle2,
     className: "bg-green-100 text-green-800 border-green-200",
     dotColor: "bg-green-500",
   },
-  rejected: {
-    label: "Rejeitado",
+  failed: {
+    label: "Resposta Errada",
     icon: XCircle,
     className: "bg-red-100 text-red-800 border-red-200",
     dotColor: "bg-red-500",
@@ -54,11 +55,41 @@ const statusConfig = {
     className: "bg-yellow-100 text-yellow-800 border-yellow-200",
     dotColor: "bg-yellow-500",
   },
-  running: {
-    label: "Executando",
+  processing: {
+    label: "Processando",
     icon: PlayCircle,
     className: "bg-blue-100 text-blue-800 border-blue-200",
     dotColor: "bg-blue-500",
+  },
+  "compile-error": {
+    label: "Erro de Compilação",
+    icon: AlertCircle,
+    className: "bg-orange-100 text-orange-800 border-orange-200",
+    dotColor: "bg-orange-500",
+  },
+  timeout: {
+    label: "Tempo Limite",
+    icon: Clock,
+    className: "bg-purple-100 text-purple-800 border-purple-200",
+    dotColor: "bg-purple-500",
+  },
+  "runtime-error": {
+    label: "Erro de Execução",
+    icon: AlertCircle,
+    className: "bg-red-100 text-red-800 border-red-200",
+    dotColor: "bg-red-500",
+  },
+  "internal-error": {
+    label: "Erro Interno",
+    icon: AlertCircle,
+    className: "bg-gray-100 text-gray-800 border-gray-200",
+    dotColor: "bg-gray-500",
+  },
+  unknown: {
+    label: "Desconhecido",
+    icon: AlertCircle,
+    className: "bg-gray-100 text-gray-800 border-gray-200",
+    dotColor: "bg-gray-500",
   },
 } as const;
 
@@ -89,13 +120,11 @@ function formatDate(dateString: string) {
   const diffTime = date.getTime() - now.getTime();
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-  const formatted = date.toLocaleString("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+const formatted = date.toLocaleDateString("pt-BR", {
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+});
 
   let relative = "";
   let isOverdue = false;
@@ -133,9 +162,11 @@ export default function ActivitiesDetails() {
     mapActivities,
     mapProblems,
     loading,
-    submissions,
     updateSubmissions,
   } = useData();
+
+  const [activitySubmissions, setActivitySubmissions] = useState<Submission[]>([]);
+  const [fetchedProblem, setFetchedProblem] = useState<Problem | undefined>(undefined);
 
   const activityId = params.id;
 
@@ -146,40 +177,60 @@ export default function ActivitiesDetails() {
   }, [activityId, mapActivities]);
 
   const selectedProblem = useMemo(() => {
-    return selectedActivity
+    // Primeiro tenta buscar do mapa (cache)
+    const problemFromMap = selectedActivity
       ? mapProblems.get(selectedActivity.problemId)
       : undefined;
-  }, [selectedActivity, mapProblems]);
+    
+    // Se não encontrou no mapa, usa o problema buscado da API
+    return problemFromMap || fetchedProblem;
+  }, [selectedActivity, mapProblems, fetchedProblem]);
 
   // Busca as submissões da atividade
-  // const fetchSubmissions = async (activity: Activity) => {
-  //   const data = await getSubmissionsByActivityId(activity.id);
-  //   setSubmissions(data);
-  // };
+  const fetchSubmissions = async (activity: Activity) => {
+    try {
+      setLocalLoading(true);
+      const data = await getSubmissionsByActivityId(String(activity.id));
+      
+      // Busca o problema se não estiver no cache
+      if (!mapProblems.get(activity.problemId)) {
+        const problem = await getProblemById(`${activity.problemId}`);
+        setFetchedProblem(problem);
+      }
+      
+      setActivitySubmissions(data);
+    } catch (error) {
+      console.error("Erro ao buscar submissões da atividade:", error);
+      setActivitySubmissions([]); // limpa em caso de erro
+    } finally {
+      setLocalLoading(false);
+    }
+  };
 
   // Quando a atividade selecionada muda, busca o problema e as submissões
-  // useEffect(() => {
-  //   if (selectedActivity) {
-  //     fetchSubmissions(selectedActivity);
-  //   }
-  // }, [selectedActivity]);
+  useEffect(() => {
+    if (selectedActivity) {
+      fetchSubmissions(selectedActivity);
+    }
+  }, [selectedActivity]);
 
   // Redireciona para o detalhe da submissão ao clicar na linha da tabela
   function redirectToSubmission(submission: Submission) {
-    console.log("Redirecting to submission:", submission);
-    navigate(`/submissions/${submission.id}`);
+    navigate(`/submissions/${submission.activityId}/${submission.id}`);
   }
 
   async function handleSubmit(code: string, activityId: number) {
     try {
       setLocalLoading(true);
-      console.log("Submitting code:", code);
-      const response = await postSubmission({
+      await postSubmission({
         code: code,
         activityId: activityId,
       });
       await updateSubmissions();
-      console.log("Submission response:", response);
+      // refresh local activity submissions as well
+      if (selectedActivity) {
+        await fetchSubmissions(selectedActivity);
+      }
       navigate(`/submissions`);
     } catch (error) {
       alert("Erro ao submeter o código. Tente novamente.");
@@ -189,22 +240,58 @@ export default function ActivitiesDetails() {
     }
   }
 
-  if (loading || localLoading) {
+  // Mostra loading enquanto carrega dados globais ou o problema específico
+  if (loading || (selectedActivity && !selectedProblem && localLoading)) {
     return (
       <div className="max-w-7xl mx-auto p-6">
-        <LoadingSpinner />
+        <Loading />
       </div>
     );
   }
 
-  // Se não encontrar atividade ou problema, mostra tela em branco
-  if (selectedActivity === undefined || selectedProblem === undefined) {
-    console.warn("Atividade ou problema não encontrado");
-    return <div className="max-w-7xl mx-auto p-6"></div>;
+  // Se não encontrar atividade, mostra mensagem de erro
+  if (selectedActivity === undefined) {
+    return (
+      <div className="max-w-7xl mx-auto p-6">
+        <div className="text-center py-12">
+          <XCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
+          <h3 className="text-xl font-medium text-gray-900 mb-2">
+            Atividade não encontrada
+          </h3>
+          <p className="text-gray-500 mb-4">
+            A atividade que você está procurando não existe ou foi removida.
+          </p>
+          <Button onClick={() => navigate("/activities")}>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Voltar para Atividades
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Se não encontrar problema, mostra mensagem de erro
+  if (selectedProblem === undefined) {
+    return (
+      <div className="max-w-7xl mx-auto p-6">
+        <div className="text-center py-12">
+          <XCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
+          <h3 className="text-xl font-medium text-gray-900 mb-2">
+            Problema não encontrado
+          </h3>
+          <p className="text-gray-500 mb-4">
+            O problema associado a esta atividade não foi encontrado.
+          </p>
+          <Button onClick={() => navigate("/activities")}>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Voltar para Atividades
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   const dueDate = formatDate(selectedActivity.dueDate);
-
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-8">
       {/* Botão de voltar */}
@@ -245,7 +332,14 @@ export default function ActivitiesDetails() {
             <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 text-center">
               <User className="w-5 h-5 mx-auto mb-1" />
               <div className="text-sm font-medium">Submissões</div>
-              <div className="text-lg font-bold">{submissions.length}</div>
+              {localLoading ? (
+                <div className="text-lg font-bold flex items-center justify-center">
+                  <Loader2 className="w-4 h-4 animate-spin mr-1" />
+                  ...
+                </div>
+              ) : (
+                <div className="text-lg font-bold">{activitySubmissions.length}</div>
+              )}
               <div className="text-xs text-blue-200">tentativas</div>
             </div>
           </div>
@@ -306,26 +400,41 @@ export default function ActivitiesDetails() {
             <Button
               variant="outline"
               size="sm"
-              // onClick={() =>
-              //   // selectedActivity && fetchSubmissions(selectedActivity)
-              // }
+              onClick={() => selectedActivity && fetchSubmissions(selectedActivity)}
+              disabled={localLoading}
             >
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Atualizar
+              <RefreshCw className={`w-4 h-4 mr-2 ${localLoading ? 'animate-spin' : ''}`} />
+              {localLoading ? 'Atualizando...' : 'Atualizar'}
             </Button>
           </div>
         </div>
 
         <div className="p-6">
-          {submissions.length === 0 ? (
+          {localLoading ? (
+            <div className="text-center py-8">
+              <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                Carregando submissões...
+              </h3>
+            </div>
+          ) : activitySubmissions.length === 0 ? (
             <div className="text-center py-8">
               <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">
-                Nenhuma submissão ainda
+                Nenhuma submissão para esta atividade
               </h3>
               <p className="text-gray-500">
-                Suas submissões aparecerão aqui após o envio
+                Use o editor acima para enviar seu código. Após enviar, suas submissões aparecerão aqui.
               </p>
+              <div className="mt-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                >
+                  Ir para o editor
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="overflow-hidden">
@@ -348,7 +457,7 @@ export default function ActivitiesDetails() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {submissions.map((submission) => {
+                  {activitySubmissions.map((submission: Submission) => {
                     const submissionDate = formatDate(submission.dateSubmitted);
                     return (
                       <TableRow

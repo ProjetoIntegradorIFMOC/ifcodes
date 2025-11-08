@@ -31,7 +31,9 @@ class Submissao extends Model
         'data_submissao',
         'codigo',
         'linguagem',
-        'atividade_id'
+        'atividade_id',
+        'user_id',
+        'status_correcao_id'
     ];
 
     public function atividade(): BelongsTo
@@ -42,6 +44,16 @@ class Submissao extends Model
     public function correcoes()
     {
         return $this->hasMany(Correcao::class);
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function statusCorrecao(): BelongsTo
+    {
+        return $this->belongsTo(StatusCorrecao::class, 'status_correcao_id');
     }
 
     public function getStatus(): array

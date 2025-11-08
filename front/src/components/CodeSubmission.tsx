@@ -293,7 +293,7 @@ export function CodeSubmissionComponent({ onSubmit }: CodeSubmissionProps) {
             ) : (
               <>
                 <Zap className="w-4 h-4 mr-2" />
-                Enviar Submissãoa
+                Enviar Submissão
               </>
             )}
           </Button>

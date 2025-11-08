@@ -54,25 +54,31 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [submissions]);
 
   const updateSubmissions = async () => {
-    const submissions = await getAllSubmissions();
-    setSubmissions(submissions);
+    try {
+      const submissions = await getAllSubmissions();
+      setSubmissions(submissions);
+    } catch (error) {
+      console.error("DataContext: Erro ao atualizar submissões:", error);
+    }
   };
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
+        
         const [activitiesData, problemsData, submissionsData] =
           await Promise.all([
             getAllActivities(),
             getAllProblems(),
             getAllSubmissions(),
           ]);
+        
         setActivities(activitiesData.items);
         setProblems(problemsData);
         setSubmissions(submissionsData);
       } catch (error) {
-        console.error("Failed to fetch data:", error);
+        console.error("DataContext: Falha ao buscar dados:", error);
       } finally {
         setLoading(false);
       }
@@ -80,6 +86,25 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
 
     fetchData();
   }, []);
+
+  // Polling para atualizar submissões pendentes/processando a cada 10 segundos
+  useEffect(() => {
+    const hasPendingSubmissions = submissions.some(
+      (s) => s.status === "pending" || s.status === "processing"
+    );
+
+    if (!hasPendingSubmissions) {
+      return;
+    }
+
+    const intervalId = setInterval(async () => {
+      await updateSubmissions();
+    }, 10000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [submissions]);
 
   return (
     <DataContext.Provider

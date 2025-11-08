@@ -1,230 +1,166 @@
-# Guia de Setup do Ambiente de Desenvolvimento
+# 📌 IF Codes
 
-Este guia explica como configurar e executar o sistema (Backend Laravel, Frontend React e API Judge0) localmente para desenvolvimento.
 
-## Arquitetura do Ambiente
 
-Nosso ambiente de desenvolvimento é flexível e separa a **criação da máquina** da **configuração das ferramentas**.
+## 🚀 Tecnologias Utilizadas
 
-1.  **A Máquina (Ubuntu 22.04):** Você precisa de um ambiente Ubuntu 22.04. O método recomendado e automatizado é usar o `Vagrantfile` deste repositório, que sobe uma VM pré-configurada.
-2.  **As Ferramentas (O Script):** O arquivo `provision-tools.sh` instala o PHP, Node, Docker e todas as dependências corretas.
+- [Laravel](https://laravel.com/) – Framework PHP para desenvolvimento web
+- [Docker](https://www.docker.com/) – Containerização do ambiente
+- [PostgreSQL](https://www.postgresql.org/) – Banco de dados relacional
 
-**O ponto principal:** Se você não quiser usar o Vagrant (por exemplo, se preferir usar WSL2 no Windows ou uma VM manual), você pode. Basta pular o "Passo 1 (Opção A)" e, em vez disso, garantir que você execute o `provision-tools.sh` (Passo 2) dentro do seu próprio ambiente Ubuntu 22.04.
 
 ---
 
-## ⚠️ Nota Importante para Usuários de Windows
+# Guia de Instalação do Ambiente de Desenvolvimento
 
-Para que este ambiente funcione corretamente no Windows, duas configurações são essenciais **antes** de começar.
+Este guia detalha o processo para configurar e iniciar o ambiente de desenvolvimento completo do projeto, que utiliza Vagrant para criar uma máquina virtual e Docker para orquestrar os serviços.
 
-### 1. Rsync (Obrigatório para Sincronização)
-
-Nosso `Vagrantfile` usa `rsync` para sincronização de arquivos. Ele é muito mais rápido que o padrão e resolve erros de `symlink` com o `npm install`.
-
-O `rsync` não vem com o Windows, mas está incluído no **Git for Windows (Git Bash)**.
-
-* **Ação:** Instale o [Git for Windows](https://git-scm.com/download/win). Durante a instalação, certifique-se de que o Git seja adicionado ao seu `PATH` (selecione a opção "Git from the command line and also from 3rd-party software"). O Vagrant o encontrará automaticamente.
-
-### 2. Performance (Hypervisor)
-
-O Vagrant (VirtualBox) pode ser lento no Windows. A performance melhora drasticamente se você habilitar as ferramentas de virtualização nativas do Windows.
-
-* **Ação:**
-    1.  Vá em "Ativar ou desativar recursos do Windows" no Painel de Controle.
-    2.  Certifique-se de que as seguintes caixas estejam **marcadas**:
-        * `Plataforma de Hipervisor do Windows`
-    3.  Reinicie o seu computador.
+> ⚠️ **Aviso de Desempenho: Linux vs. Windows**
+> É altamente recomendado executar este ambiente em um sistema operacional Linux. A integração nativa do Docker com o kernel do Linux oferece um desempenho drasticamente superior. Em sistemas Windows, a camada de virtualização adicional para o compartilhamento de arquivos pode tornar a aplicação, especialmente o frontend, significativamente mais lenta.
 
 ---
 
-## Passo 1: Subindo a Máquina (Ambiente)
+## 1. Pré-requisitos
 
-Escolha **uma** das opções abaixo.
+Antes de começar, garanta que os seguintes softwares estejam instalados em sua máquina:
 
-### Opção A: O Caminho Recomendado (Vagrant)
+1.  **Virtualização Habilitada na BIOS:** Verifique se a virtualização (Intel VT-x ou AMD-V) está ativada na BIOS/UEFI do seu computador. Este é um requisito fundamental para o VirtualBox funcionar.
+2.  **[Git](https://git-scm.com/downloads)**: Para controle de versão.
+3.  **[VirtualBox](https://www.virtualbox.org/wiki/Downloads)**: A plataforma de virtualização.
+4.  **[Vagrant](https://developer.hashicorp.com/vagrant/downloads)**: A ferramenta para gerenciar a máquina virtual.
 
-1.  Abra seu terminal na raiz deste projeto.
-2.  Execute `vagrant up` para criar e provisionar a VM. Isso só precisa ser feito uma vez e pode demorar.
+### Otimização para Usuários de Windows (Opcional, mas recomendado)
+
+Para mitigar a falta de desempenho no Windows, você pode tentar ativar a "Plataforma do Hipervisor do Windows", o que pode melhorar a comunicação com o VirtualBox.
+1.  Pressione `Win` e digite "Ativar ou desativar recursos do Windows".
+2.  Na janela que abrir, encontre e marque a opção **"Plataforma do Hipervisor do Windows"**.
+3.  Clique em "OK" e reinicie o computador quando solicitado.
+
+---
+
+## 2. Configuração do Projeto
+
+Siga estes passos para estruturar corretamente seu ambiente local.
+
+### a. Estrutura de Pastas
+
+1.  Crie uma pasta principal para o projeto (ex: `ifcodes-dev`).
+2.  Dentro desta pasta, crie a seguinte estrutura e clone os repositórios do backend e frontend (ou forks correspondentes) nos locais indicados:
+
+    ```
+    ifcodes-dev/
+    |
+    ├── back/
+    |
+    └── front/
+    ```
+    **Exemplo dos comandos:**
+    ```bash
+    mkdir ifcodes-dev
+    cd ifcodes-dev
+    git clone [URL_DO_REPO_BACKEND] back
+    git clone [URL_DO_REPO_FRONTEND] front
+    ```
+
+### b. Arquivos de Configuração
+
+Copie os seguintes arquivos dessa **[pasta do drive](https://drive.google.com/drive/folders/14nPSCOsxm1RkzN-rDTMaXMD-eoaDHBtA?usp=drive_link)** para a **raiz da sua pasta principal (`ifcodes-dev/`)**:
+
+* `docker-compose.yml`
+* `init-backend-db.sh`
+* `judge0.conf`
+* `Vagrantfile`
+
+### c. Hierarquia Final dos Arquivos
+
+Sua estrutura de pastas e arquivos deve ficar exatamente assim:
+
+```
+ifcodes-dev/
+├── .env
+├── back/
+    └── ... (código completo do Laravel)
+├── front/
+    └── ... (código completo do React)
+├── docker-compose.yml
+├── init-backend-db.sh
+├── judge0.conf
+└── Vagrantfile
+```
+## 3. Subindo o Ambiente (Passo a Passo)
+
+Siga esta sequência com atenção.
+
+1.  **Ajuste de Recursos (Opcional):**
+    A máquina virtual está pré-configurada para usar **4 núcleos de CPU** e **4GB de RAM**. Se sua máquina tiver recursos limitados ou de sobra, você pode ajustar estes valores no `Vagrantfile`:
+    ```ruby
+    # Dentro do Vagrantfile
+    vb.customize ["modifyvm", :id, "--memory", "4096"] # Altere o valor da memória (em MB)
+    vb.cpus = 4        # Altere o número de núcleos de CPU
+    ```
+
+2.  **Inicie a Máquina Virtual:**
+    Abra um terminal na pasta raiz do projeto (`ifcodes-dev/`) e execute:
     ```bash
     vagrant up
     ```
+    Este comando irá baixar a imagem do Ubuntu e provisionar a VM com Docker, o que pode demorar vários minutos na primeira vez.
 
-> **Dica de Troubleshooting:** Se a máquina não subir ou apresentar erros de tela preta, descomente a linha `vb.gui = true` no `Vagrantfile`. Isso abrirá uma janela do VirtualBox, permitindo que você veja o que está acontecendo dentro da VM.
+    > **Dica de Troubleshooting:** Se a máquina não subir ou apresentar erros de tela preta, descomente a linha `vb.gui = true` no `Vagrantfile`. Isso abrirá uma janela do VirtualBox, permitindo que você veja o que está acontecendo dentro da VM.
 
-
-3.  O script de provisionamento exigirá um `reload` para aplicar as configurações de GRUB e Docker.
+3.  **Recarregue a VM:**
+    O Judge0 precisa de uma configuração especial no boot da VM. Para aplicá-la, é necessário recarregar a máquina:
     ```bash
     vagrant reload
     ```
 
-### Opção B: O Caminho Manual
+4.  **Configure o `.env` do Backend:**
+    O passo anterior gerou um arquivo `passwords.txt` na raiz do seu projeto.
+    * Abra o `passwords.txt` e copie o valor do campo **"PostgreSQL Password"**.
+    * Navegue até a pasta `back/src/`. Você encontrará um arquivo `.env.example`.
+    * **Copie** este arquivo e renomeie a cópia para `.env`.
+    * Abra o novo `back/src/.env` e cole a senha que você copiou no campo `DB_PASSWORD`.
 
-Para usuários avançados que preferem não usar Vagrant.
-
-1.  Instale e configure um ambiente Ubuntu 22.04.
-2.  Clone este repositório para dentro desse ambiente.
-3.  Continue para o **Passo 2**.
-
----
-
-## Passo 2: Configurando as Ferramentas
-
-Se você usou a **Opção A (Vagrant)**, este passo **já foi feito automaticamente** pelo `vagrant up`.
-
-Se você usou a **Opção B (Manual)**, você deve executar o script de provisionamento agora para instalar todas as ferramentas:
-
-```bash
-# Apenas para usuários da Opção B (Manual)
-cd /caminho/para/o/projeto
-sudo ./provision-tools.sh
-```
-
-## Passo 3: Executando os Componentes (Fluxo Diário)
-
-Este é o fluxo que você usará todos os dias para programar.
-
-### Ação #1: Iniciar a Sincronização (Obrigatório)
-
-Como usamos `rsync`, a sincronização de arquivos do seu PC (Host) para a VM (Guest) não é instantânea. Você **deve** iniciar o "observador" (`rsync-auto`).
-
-* Abra um **novo terminal (no seu PC Host)**, navegue até a pasta do projeto e execute:
-    ```bash
-    vagrant rsync-auto
-    ```
-> **Deixe este terminal aberto o tempo todo** enquanto estiver programando. Ele copiará seus arquivos para a VM assim que você salvar.
-
-### Ação #2: Ligar a Infraestrutura (DB e Judge0)
-
-Usaremos o Docker *dentro* da VM para rodar o banco de dados, o Redis e o Judge0.
-
-1.  Acesse a máquina virtual:
+5.  **Acesse a VM via SSH:**
     ```bash
     vagrant ssh
     ```
-    
-2.  Navegue até a pasta do projeto (que está em `/vagrant`):
+
+6.  **Navegue até a Pasta do Projeto:**
+    Dentro da VM, os arquivos do seu projeto estão na pasta `/vagrant`.
     ```bash
     cd /vagrant
     ```
-    Se você estiver no Windows, certifique-se de que seus arquivos de configuração não possuem o caractere `\r` nos fins de linha:
-    ```bash
-    sed -i 's/\r$//' judge0.conf && sed -i 's/\r$//' init-backend-db.sh
-    ```
-    Quando a máquina for reiniciada talvez seja necessário rodar o comando de novo.
-3.  Inicie os containers do (BD/Redis) e `judge0`:
+
+7.  **Inicie os Contêineres Docker:**
+    Este comando irá baixar todas as imagens Docker e iniciar os serviços.
     ```bash
     docker compose up -d
     ```
-    *Obs: Deixe este terminal aberto ou saia com `exit`.*
+    > **Atenção:** Este processo pode demorar muito, especialmente na primeira vez em um sistema Windows. É normal que o download de algumas imagens pareça "travado". Se o processo ficar congelado por mais de 5-10 minutos em uma única etapa, pressione `Ctrl + C` para interromper e execute o comando `docker compose up -d` novamente. O Docker continuará de onde parou.
 
-### Ação #3: Ligar o Backend (Laravel)
-
-1.  Abra um **segundo terminal** e acesse a VM:
+8.  **Execute as Migrações do Banco de Dados:**
+    Com os contêineres rodando, execute as migrações do Laravel para criar as tabelas no banco de dados.
     ```bash
-    vagrant ssh
-    ```
-2.  Navegue até a pasta do backend:
-    ```bash
-    cd /vagrant/back/src
+    docker exec laravel_app php artisan migrate:fresh --seed
     ```
 
-3.  **Configuração (Primeira Vez):**
-    * Instale as dependências:
+9.  **Gere a Chave da Aplicação Laravel:**
+    Execute o comando para gerar a chave de criptografia da aplicação:
     ```bash
-    composer install
-    ```
-    * Copie o arquivo de ambiente:
-    ```bash
-    `cp .env.example .env`
+    docker exec laravel_app php artisan key:generate
     ```
 
-    * **Obtenha a Senha do Banco de Dados:**
-      (Ainda na VM) Precisamos da senha do Postgres que foi gerada e salva no `judge0.conf`.
-        ```bash
-        # Exibe o conteúdo do judge0.conf para você copiar a senha
-        cat /vagrant/judge0.conf
-        ```
-      Procure pela linha `POSTGRES_PASSWORD=` e copie o valor.
 
-    * **Edite o `.env`:**
-      Agora, edite o arquivo `.env` do backend (`nano .env`) e garanta que as seguintes variáveis estejam configuradas corretamente:
-        ```ini
-        # Edite estas linhas em /vagrant/back/.env
-        APP_DEBUG=true
-        APP_URL=http://localhost:8000
-        
-        # Cole a senha que você copiou do judge0.conf
-        DB_PASSWORD=SUA_SENHA_DO_JUDGE0_CONF_VAI_AQUI 
-        
-        # Garanta que o resto das configurações do BD estão corretas
-        DB_CONNECTION=pgsql
-        DB_HOST=127.0.0.1
-        DB_PORT=5432
-        DB_DATABASE=ifcodes
-        DB_USERNAME=integrador
-        
-        # Configuração do Sanctum para o frontend
-        SANCTUM_STATEFUL_DOMAINS=localhost:5173
-        SESSION_DOMAIN=localhost
-        ```
-
-    * Gere a chave do app:
-    ```bash
-    php artisan key:generate
-    ```
-    * Limpe o cache: 
-    ```bash
-    php artisan config:cache
-    ```
-    * Rode as migrações: 
-    ```bash
-    php artisan migrate --seed
-    ``` 
-
-
-4.  **Execute o servidor:**
-    ```bash
-    php artisan serve --host=0.0.0.0
-    ```
-    *Deixe este terminal rodando.*
-
-### Ação #4: Ligar o Frontend (React)
-
-1.  Abra um **terceiro terminal** e acesse a VM:
-    ```bash
-    vagrant ssh
-    ```
-2.  Navegue até a pasta do frontend:
-    ```bash
-    cd /vagrant/front
-    ```
-
-3.  **Configuração (Primeira Vez):**
-    * Instale as dependências:
-    ```bash
-    npm install
-    ```
-    * Copie o arquivo de ambiente:
-    ```bash
-    cp .env.example .env
-    ```
-
-4.  **Execute o servidor:**
-    ```bash
-    npm run dev -- --host 0.0.0.0
-    ```
-    *Deixe este terminal rodando.*
+**Pronto!** Se todos os passos foram concluídos, o sistema deve estar totalmente funcional.
 
 ---
 
-## Resumo dos Acessos
-
-Com tudo rodando, você pode acessar os serviços no seu navegador (no PC Host):
+## 4. Acessando os Serviços
 
 * **Frontend (React):** `http://localhost:5173`
 * **Backend (Laravel):** `http://localhost:8000`
 * **API (Judge0):** `http://localhost:2358`
-* **Banco de Dados (Host):** `localhost` na porta `5433`
 
 ### Acessando os Bancos de Dados (via DBeaver, etc.)
 
@@ -235,13 +171,31 @@ Ambas as aplicações usam a mesma instância do PostgreSQL, mas bancos de dados
 * **Porta:** `5433`
 * **Base de Dados:** `judge0`
 * **Usuário:** `integrador`
-* **Senha:** A senha do postgres do arquivo `judge0.conf`.
+* **Senha:** A senha do arquivo `passwords.txt`.
 
 **Banco de Dados do Backend:**
 * **Host/URL:** `localhost`
 * **Porta:** `5433`
 * **Base de Dados:** `ifcodes`
 * **Usuário:** `integrador`
-* **Senha:** A senha do postgres do arquivo `judge0.conf`.
+* **Senha:** A senha do arquivo `passwords.txt`.
 
 ---
+
+## 5. Dica de Performance Avançada: NFS (Windows)
+
+Caso o sistema esteja muito lento, a alternativa é usar o modo de compartilhamento de arquivos **NFS**, que é drasticamente mais rápido. No Windows, ele não é suportado nativamente pelo Vagrant e precisa de um plugin. Essa configuração não está como padrão pois não foi bem testada ainda.
+
+1.  **Instale o plugin:**
+    ```bash
+    vagrant plugin install vagrant-winnfsd
+    ```
+2.  **Edite o `Vagrantfile`:**
+    Altere a linha `synced_folder` para usar o NFS e adicione as opções de montagem que corrigem bugs comuns no Windows.
+    ```ruby
+    # No Vagrantfile
+    config.vm.synced_folder ".", "/vagrant", type: "nfs", mount_options: ['vers=3', 'tcp', 'nolock', 'actimeo=1']
+    ```
+3.  Execute `vagrant reload` e **aceite a solicitação do Firewall do Windows** quando ela aparecer.
+
+Fiquem à vontade para compartilhar outras configurações e melhorias!
