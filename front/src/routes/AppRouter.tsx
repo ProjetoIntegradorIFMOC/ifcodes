@@ -1,4 +1,3 @@
-import App from "@/App";
 import Activities from "@/pages/activities/Activities";
 import ActivitiesDetails from "@/pages/activitiesDetails/ActivitiesDetails";
 import AppLayout from "@/pages/AppLayout";
@@ -23,9 +22,8 @@ export default function AppRouter() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/unauthorized" element={<Unauthorized />} />
-        <Route path="/" element={<RequireAuth />}>
+        <Route element={<RequireAuth />}>
           <Route path="/" element={<AppLayout />}>
-            {/* <Route index element={<App />} /> */}
             <Route index element={<Home />} />
             <Route element={<RequireRole allowedRoles={["student", "professor", "admin"]} />}>
               <Route path="change-password" element={<ChangePassword />} />
