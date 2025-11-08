@@ -322,18 +322,17 @@ export default function ClassDetails() {
                   const isOverdue = dueDate < now;
                   const isPending = !isOverdue;
                   const problem = allProblems.find(p => p.id === activity.problemId);
-
+                  
                   return (
                     <div
                       key={activity.id}
-                      className={`p-4 rounded-lg border-l-4 transition-colors cursor-pointer hover:shadow-md ${
+                      className={`p-4 pb-14 rounded-lg border-l-4 transition-colors hover:shadow-md relative ${
                         isOverdue
                           ? "bg-red-50 border-red-500"
                           : isPending
                           ? "bg-yellow-50 border-yellow-500"
                           : "bg-green-50 border-green-500"
                       }`}
-                      onClick={() => setViewActivity(activity)}
                     >
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
@@ -347,21 +346,6 @@ export default function ClassDetails() {
                               minute: "2-digit",
                             })}
                           </p>
-                          <span
-                            className={`inline-block mt-2 px-2 py-1 rounded text-xs font-medium ${
-                              isOverdue
-                                ? "bg-red-100 text-red-700"
-                                : isPending
-                                ? "bg-yellow-100 text-yellow-700"
-                                : "bg-green-100 text-green-700"
-                            }`}
-                          >
-                            {isOverdue
-                              ? "Atrasada"
-                              : isPending
-                              ? "Pendente"
-                              : "Concluída"}
-                          </span>
                         </div>
                         {hasAnyRole(["professor", "admin"]) && (
                           <div className="relative ml-4 activity-menu">
@@ -409,6 +393,52 @@ export default function ClassDetails() {
                           </div>
                         )}
                       </div>
+                      
+                      {/* Botões de ação */}
+                      <div className="absolute bottom-3 left-3 flex gap-2">
+                        <button
+                          onClick={() => setViewActivity(activity)}
+                          className={`px-3 py-1.5 text-xs font-medium text-gray-700 rounded-full transition-colors ${
+                            isOverdue
+                              ? "hover:bg-red-100"
+                              : isPending
+                              ? "hover:bg-yellow-100"
+                              : "hover:bg-green-100"
+                          }`}
+                        >
+                          Ver Problema
+                        </button>
+                        <button
+                          onClick={() => {
+                            // TODO: Implementar visualização de submissões
+                          }}
+                          className={`px-3 py-1.5 text-xs font-medium text-gray-700 rounded-full transition-colors ${
+                            isOverdue
+                              ? "hover:bg-red-100"
+                              : isPending
+                              ? "hover:bg-yellow-100"
+                              : "hover:bg-green-100"
+                          }`}
+                        >
+                          Ver Submissões
+                        </button>
+                      </div>
+
+                      <span
+                        className={`absolute bottom-3 right-10 px-2 py-1 rounded text-xs font-medium ${
+                          isOverdue
+                            ? "bg-red-100 text-red-700"
+                            : isPending
+                            ? "bg-yellow-100 text-yellow-700"
+                            : "bg-green-100 text-green-700"
+                        }`}
+                      >
+                        {isOverdue
+                          ? "Atrasada"
+                          : isPending
+                          ? "Pendente"
+                          : "Concluída"}
+                      </span>
                     </div>
                   );
                 })
