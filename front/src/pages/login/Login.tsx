@@ -68,7 +68,7 @@ export default function Login() {
                 roles: roles
             });
             
-            navigate("/home");
+            navigate("/");
         } catch (error) {
             if (axios.isAxiosError(error) && error.response?.status === 422) {
                 setError("Email ou Senha inválidos");

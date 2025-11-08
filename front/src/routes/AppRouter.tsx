@@ -23,10 +23,10 @@ export default function AppRouter() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/unauthorized" element={<Unauthorized />} />
-        <Route element={<RequireAuth />}>
+        <Route path="/" element={<RequireAuth />}>
           <Route path="/" element={<AppLayout />}>
-            <Route index element={<App />} />
-            <Route path="home" element={<Home />} />
+            {/* <Route index element={<App />} /> */}
+            <Route index element={<Home />} />
             <Route element={<RequireRole allowedRoles={["student", "professor", "admin"]} />}>
               <Route path="change-password" element={<ChangePassword />} />
               <Route path="activities">

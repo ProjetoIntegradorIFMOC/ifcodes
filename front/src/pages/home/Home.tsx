@@ -20,6 +20,7 @@ import { getAllActivities } from "@/services/ActivitiesService";
 import { getAllSubmissions } from "@/services/SubmissionsService";
 import type { Activity, Submission } from "@/types";
 import { useData } from "@/context/DataContext";
+import Loading from "@/components/Loading";
 
 interface QuickStatsProps {
   title: string;
@@ -163,14 +164,7 @@ function ActivityCard({ activity, problemTitle, onViewActivity }: ActivityCardPr
 
 function LoadingDashboard() {
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600">Carregando dashboard...</p>
-        </div>
-      </div>
-    </div>
+    <Loading />
   );
 }
 
