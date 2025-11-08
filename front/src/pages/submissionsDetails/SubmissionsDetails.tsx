@@ -7,6 +7,7 @@ import {
   TableRow,
 } from "@/components/table";
 import { getActivityById } from "@/services/ActivitiesService";
+import { getProblemById } from "@/services/ProblemsServices";
 import {
   getResultBySubmissionId,
   getSubmissionById,
@@ -17,6 +18,7 @@ import type {
   Submission,
   SubmissionReport,
   TestCaseResult,
+  Problem,
 } from "@/types";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router";
@@ -43,8 +45,9 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useData } from "@/context/DataContext";
+import Loading from "@/components/Loading";
 
-// Configuração dos possíveis status de execução dos testes de submissão
+// Configurações de status de testes e submissões
 const statusConfig = {
   passed: {
     label: "Aceito",
@@ -54,14 +57,6 @@ const statusConfig = {
     bgColor: "bg-green-50",
     borderColor: "border-green-200",
   },
-  rejected: {
-    label: "Rejeitado",
-    icon: XCircle,
-    className: "bg-red-100 text-red-800 border-red-200",
-    dotColor: "bg-red-500",
-    bgColor: "bg-red-50",
-    borderColor: "border-red-200",
-  },
   pending: {
     label: "Pendente",
     icon: Clock,
@@ -70,13 +65,21 @@ const statusConfig = {
     bgColor: "bg-yellow-50",
     borderColor: "border-yellow-200",
   },
-  running: {
-    label: "Executando",
-    icon: PlayCircle,
+  processing: {
+    label: "Processando",
+    icon: Loader2,
     className: "bg-blue-100 text-blue-800 border-blue-200",
     dotColor: "bg-blue-500",
     bgColor: "bg-blue-50",
     borderColor: "border-blue-200",
+  },
+  failed: {
+    label: "Resposta Errada",
+    icon: XCircle,
+    className: "bg-red-100 text-red-800 border-red-200",
+    dotColor: "bg-red-500",
+    bgColor: "bg-red-50",
+    borderColor: "border-red-200",
   },
   "compile-error": {
     label: "Erro de Compilação",
@@ -86,7 +89,7 @@ const statusConfig = {
     bgColor: "bg-orange-50",
     borderColor: "border-orange-200",
   },
-  "time-limit": {
+  timeout: {
     label: "Tempo Limite",
     icon: Clock,
     className: "bg-purple-100 text-purple-800 border-purple-200",
@@ -94,13 +97,29 @@ const statusConfig = {
     bgColor: "bg-purple-50",
     borderColor: "border-purple-200",
   },
-  "wrong-answer": {
-    label: "Resposta Incorreta",
-    icon: XCircle,
+  "runtime-error": {
+    label: "Erro de Execução",
+    icon: AlertCircle,
     className: "bg-red-100 text-red-800 border-red-200",
     dotColor: "bg-red-500",
     bgColor: "bg-red-50",
     borderColor: "border-red-200",
+  },
+  "internal-error": {
+    label: "Erro Interno",
+    icon: AlertCircle,
+    className: "bg-gray-100 text-gray-800 border-gray-200",
+    dotColor: "bg-gray-500",
+    bgColor: "bg-gray-50",
+    borderColor: "border-gray-200",
+  },
+  unknown: {
+    label: "Desconhecido",
+    icon: AlertCircle,
+    className: "bg-gray-100 text-gray-800 border-gray-200",
+    dotColor: "bg-gray-500",
+    bgColor: "bg-gray-50",
+    borderColor: "border-gray-200",
   },
 } as const;
 
@@ -167,18 +186,6 @@ function formatDate(dateString: string) {
   return { formatted, relative };
 }
 
-// Skeleton loading de detalhes da submissão
-function LoadingSpinner() {
-  return (
-    <div className="flex items-center justify-center min-h-[400px]">
-      <div className="text-center">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
-        <p className="text-gray-600">Carregando detalhes da submissão...</p>
-      </div>
-    </div>
-  );
-}
-
 interface TestCaseRowProps {
   testCase: any;
   result: TestCaseResult | undefined;
@@ -188,18 +195,17 @@ interface TestCaseRowProps {
 // Linha da tabela de casos de teste, com exibição/ocultação de saída e copiar para clipboard
 function TestCaseRow({ testCase, index, result }: TestCaseRowProps) {
   const [showOutput, setShowOutput] = useState(false);
-  const config =
-    statusConfig[testCase.status as keyof typeof statusConfig] ||
-    statusConfig.pending;
+  
+  // Determina a saída real: stdout se passou, stderr se falhou
+  const actualOutput = result?.stdout || result?.stderr || "Sem saída";
+  const expectedOutput = testCase.expectedOutput || "Sem saída esperada";
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
   };
 
   return (
-    <TableRow
-      className={`hover:${config.bgColor} transition-colors duration-200`}
-    >
+    <TableRow className="hover:bg-gray-50 transition-colors duration-200">
       <TableCell className="font-medium">
         <div className="flex items-center gap-2">
           <Hash className="w-4 h-4 text-gray-400" />
@@ -207,11 +213,10 @@ function TestCaseRow({ testCase, index, result }: TestCaseRowProps) {
         </div>
       </TableCell>
       <TableCell>
-        {result?.status}
-        {/* <StatusBadge
-          status={testCase.status as keyof typeof statusConfig}
+        <StatusBadge
+          status={result?.status as keyof typeof statusConfig || 'pending'}
           size="sm"
-        /> */}
+        />
       </TableCell>
       <TableCell>
         <div className="space-y-2">
@@ -229,11 +234,11 @@ function TestCaseRow({ testCase, index, result }: TestCaseRowProps) {
               )}
               {showOutput ? "Ocultar" : "Mostrar"}
             </Button>
-            {testCase.actualOutput && (
+            {actualOutput && (
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => copyToClipboard(testCase.actualOutput)}
+                onClick={() => copyToClipboard(actualOutput)}
                 className="h-6 px-2 text-xs"
               >
                 <Copy className="w-3 h-3" />
@@ -243,7 +248,7 @@ function TestCaseRow({ testCase, index, result }: TestCaseRowProps) {
           {showOutput && (
             <div className="bg-gray-900 rounded p-2 max-w-xs">
               <pre className="text-xs text-gray-300 whitespace-pre-wrap overflow-auto max-h-20">
-                {testCase.actualOutput || "Sem saída"}
+                {actualOutput}
               </pre>
             </div>
           )}
@@ -255,7 +260,7 @@ function TestCaseRow({ testCase, index, result }: TestCaseRowProps) {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => copyToClipboard(testCase.expectedOutput)}
+              onClick={() => copyToClipboard(expectedOutput)}
               className="h-6 px-2 text-xs"
             >
               <Copy className="w-3 h-3" />
@@ -264,7 +269,7 @@ function TestCaseRow({ testCase, index, result }: TestCaseRowProps) {
           </div>
           <div className="bg-gray-900 rounded p-2 max-w-xs">
             <pre className="text-xs text-gray-300 whitespace-pre-wrap overflow-auto max-h-20">
-              {testCase.expectedOutput || "Sem saída esperada"}
+              {expectedOutput}
             </pre>
           </div>
         </div>
@@ -317,6 +322,7 @@ export default function SubmissionsDetails() {
 
   const [results, setResults] = useState<TestCaseResult[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchedProblem, setFetchedProblem] = useState<Problem | null>(null);
 
   const mapResultByTestId = useMemo(() => {
     const map = new Map<number, TestCaseResult>();
@@ -334,9 +340,34 @@ export default function SubmissionsDetails() {
     return mapSubmissions.get(Number(submissionId));
   }, [submissionId, mapSubmissions]);
 
+  // Tenta pegar do cache primeiro, senão usa o fetchedProblem
   const selectedProblem = useMemo(() => {
-    return mapProblems.get(Number(selectedActivity?.problemId));
-  }, [selectedActivity, mapProblems]);
+    const fromCache = mapProblems.get(Number(selectedActivity?.problemId));
+    return fromCache || fetchedProblem;
+  }, [selectedActivity, mapProblems, fetchedProblem]);
+
+  // Cálculo de estatísticas dos casos de teste baseado nos resultados reais
+  // IMPORTANTE: Este useMemo deve estar ANTES de qualquer return condicional (regras dos Hooks)
+  const testStats = useMemo(() => {
+    if (!selectedProblem?.testCases || selectedProblem.testCases.length === 0) {
+      return {
+        total: 0,
+        passed: 0,
+        failed: 0,
+        successRate: 0,
+      };
+    }
+
+    const total = selectedProblem.testCases.length;
+    const passed = selectedProblem.testCases.filter((tc) => {
+      const result = mapResultByTestId.get(tc.id);
+      return result?.status === 'passed';
+    }).length;
+    const failed = total - passed;
+    const successRate = total > 0 ? Math.round((passed / total) * 100) : 0;
+
+    return { total, passed, failed, successRate };
+  }, [selectedProblem, mapResultByTestId]);
 
   useEffect(() => {
     // Busca detalhes da submissão, relatório e atividade relacionada
@@ -352,6 +383,14 @@ export default function SubmissionsDetails() {
         const [submissionResult] = await Promise.all([submissionResultCall]);
 
         setResults(submissionResult);
+
+        // Se o problema não estiver no cache e temos a atividade, busca diretamente
+        if (selectedActivity && !mapProblems.get(selectedActivity.problemId)) {
+          const problem = await getProblemById(String(selectedActivity.problemId));
+          if (problem) {
+            setFetchedProblem(problem);
+          }
+        }
       } catch (error) {
         console.error("Failed to fetch submission details:", error);
       } finally {
@@ -359,12 +398,12 @@ export default function SubmissionsDetails() {
       }
     };
     fetchData();
-  }, [submissionId]);
+  }, [submissionId, selectedActivity, mapProblems]);
 
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto p-6">
-        <LoadingSpinner />
+        <Loading />
       </div>
     );
   }
@@ -400,30 +439,6 @@ export default function SubmissionsDetails() {
     year: "numeric",
   });
 
-  // Cálculo de estatísticas dos casos de teste
-  // const testStats = {
-  //   total: submissionReport.testCases.length,
-  //   passed: submissionReport.testCases.filter((tc) => tc.status === "passed")
-  //     .length,
-  //   failed: submissionReport.testCases.filter((tc) => tc.status !== "passed")
-  //     .length,
-  //   successRate:
-  //     submissionReport.testCases.length > 0
-  //       ? Math.round(
-  //           (submissionReport.testCases.filter((tc) => tc.status === "passed")
-  //             .length /
-  //             submissionReport.testCases.length) *
-  //             100
-  //         )
-  //       : 0,
-  // };
-  const testStats = {
-    total: 0,
-    passed: 0,
-    failed: 0,
-    successRate: 0,
-  };
-
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-8">
       {/* Header de navegação */}
@@ -450,7 +465,7 @@ export default function SubmissionsDetails() {
               </span>
             </div>
             <h1 className="text-3xl font-bold mb-2">
-              {selectedActivity.title}
+              {selectedProblem?.title || "Problema não encontrado"}
             </h1>
             <div className="flex items-center gap-4 text-blue-100">
               <div className="flex items-center gap-1">
