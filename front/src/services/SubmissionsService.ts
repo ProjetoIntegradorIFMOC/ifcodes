@@ -11,7 +11,7 @@ export async function getSubmissionReportBySubmissionId(
   submissionId: string
 ): Promise<SubmissionReport | undefined> {
   await new Promise((resolve) => setTimeout(resolve, 200));
-  return fakeSubmissionReports.find((r) => r.submissionId === submissionId);
+  return fakeSubmissionReports.find((r) => r.submissionId === Number(submissionId));
 }
 /**
  * Simula uma chamada de API para buscar uma submissão pelo id.
@@ -22,7 +22,7 @@ export async function getSubmissionById(
   submissionId: string
 ): Promise<Submission | undefined> {
   await new Promise((resolve) => setTimeout(resolve, 200));
-  return fakeSubmissions.find((s) => s.id === submissionId);
+  return fakeSubmissions.find((s) => s.id === Number(submissionId));
 }
 import type { Submission } from "../types";
 import { fakeSubmissions } from "../mocks";
@@ -45,18 +45,47 @@ export async function getAllSubmissions(): Promise<Submission[]> {
       withCredentials: true,
     });
 
-    return response.data.map((submissao: any) => ({
-      id: submissao.id,
-      activityId: submissao.atividade_id,
-      dateSubmitted: submissao.data_submissao,
-      language: submissao.linguagem || "c",
-      status: submissao.status || "pending",
-    }));
+    return response.data.map((submissao: any) => {
+      const mappedStatus = submissao.status ? mapBackendStatusToFrontend(submissao.status) : "pending";
+      
+      return {
+        id: submissao.id,
+        activityId: submissao.atividade_id,
+        dateSubmitted: submissao.data_submissao,
+        language: submissao.linguagem || "c",
+        status: mappedStatus,
+        problemTitle: submissao.problema_titulo || null,
+      };
+    });
   } catch (error) {
     console.log("erro", error);
   }
 
   return [];
+}
+
+/**
+ * Mapeia os status do backend (português) para os status esperados pelo frontend
+ */
+function mapBackendStatusToFrontend(backendStatus: string): string {
+  const statusMap: Record<string, string> = {
+    'Aceita': 'passed',
+    'Na Fila': 'pending',
+    'Em Processamento': 'processing',
+    'Resposta Errada': 'failed',
+    'Tempo Limite Excedido': 'timeout',
+    'Erro de Compilação': 'compile-error',
+    'Erro de Execução (SIGSEGV)': 'runtime-error',
+    'Erro de Execução (SIGXFSZ)': 'runtime-error',
+    'Erro de Execução (SIGFPE)': 'runtime-error',
+    'Erro de Execução (SIGABRT)': 'runtime-error',
+    'Erro de Execução (NZEC)': 'runtime-error',
+    'Erro de Execução': 'runtime-error',
+    'Erro Interno': 'internal-error',
+    'Erro no Formato de Execução': 'runtime-error',
+  };
+  
+  return statusMap[backendStatus] || 'unknown';
 }
 
 export async function getResultBySubmissionId(
@@ -74,14 +103,17 @@ export async function getResultBySubmissionId(
         withCredentials: true,
       }
     );
+    
     return response.data.map((item: any) => ({
       id: item.id,
       testCaseId: item.caso_teste_id,
-      status: item.status,
+      status: mapBackendStatusToFrontend(item.status),
       submissionId: item.submissao_id,
+      stdout: item.stdout || null,
+      stderr: item.stderr || null,
     }));
   } catch (error) {
-    console.log("erro", error);
+    console.log("erro ao buscar resultados", error);
   }
   return [];
 }
@@ -122,7 +154,6 @@ export async function getSubmissionsByActivityId(
   activityId: string
 ): Promise<Submission[]> {
   try {
-    console.log("[Debug] Getting submissions for activity", activityId, "token:", localStorage.getItem("auth_token"));
     const response = await axios.get(
       `${API_URL}/api/submissoes/atividades/${activityId}`,
       {
@@ -135,30 +166,16 @@ export async function getSubmissionsByActivityId(
       }
     );
 
-    // debug: log the full response for inspection
-    console.log("[Debug] Full response:", {
-      status: response.status,
-      statusText: response.statusText,
-      headers: response.headers,
-      data: response.data
-    });
-
-    // debug: log raw response shape for inspection
-    console.log("[Debug] Raw response data:", JSON.stringify(response.data, null, 2));
-
-    // ensure we're getting the submissions array from the response
     const submissions = response.data?.submissoes || [];
-    console.log("[Debug] Extracted submissions:", submissions);
 
     const mapped = submissions.map((submissao: any) => ({
       id: submissao.id,
       activityId: submissao.atividade_id,
       dateSubmitted: submissao.data_submissao,
       language: submissao.linguagem || "c",
-      status: submissao.status || "pending",
+      status: submissao.status ? mapBackendStatusToFrontend(submissao.status) : "pending",
     }));
 
-    console.log("[Debug] Mapped submissions:", mapped);
     return mapped;
   } catch (error) {
     console.log("erro ao buscar submissões por atividade", error);

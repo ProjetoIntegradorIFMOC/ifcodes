@@ -26,6 +26,7 @@ import {
   Briefcase,
 } from "lucide-react";
 import Notification from "@/components/Notification";
+import Loading from "@/components/Loading";
 
 // Skeleton de loading exibido enquanto os professores são carregados
 function LoadingSkeleton() {
@@ -564,7 +565,7 @@ export default function Teachers() {
       <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
         {loading ? (
           <div className="p-6">
-            <LoadingSkeleton />
+            <Loading />
           </div>
         ) : filteredProfessors.length === 0 ? (
           <div className="text-center py-12">

@@ -39,10 +39,20 @@ class Atividade extends Model
     protected $fillable = [
         'data_entrega',
         'problema_id',
+        'turma_id',
+    ];
+
+    protected $casts = [
+        'data_entrega' => 'datetime',
     ];
 
     public function problema()
     {
         return $this->hasOne(Problema::class, 'id', 'problema_id');
+    }
+
+    public function turma()
+    {
+        return $this->belongsTo(Turma::class, 'turma_id');
     }
 }

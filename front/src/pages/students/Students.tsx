@@ -27,6 +27,7 @@ import {
   IdCard,
 } from "lucide-react";
 import Notification from "@/components/Notification";
+import Loading from "@/components/Loading";
 
 // Skeleton de loading exibido enquanto os alunos são carregados
 function LoadingSkeleton() {
@@ -597,7 +598,7 @@ export default function Students() {
       <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
         {loading ? (
           <div className="p-6">
-            <LoadingSkeleton />
+            <Loading />
           </div>
         ) : filteredStudents.length === 0 ? (
           <div className="text-center py-12">

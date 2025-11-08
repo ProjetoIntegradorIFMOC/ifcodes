@@ -37,9 +37,48 @@ class SubmissaoController extends Controller
      */
     public function index()
     {
-        $submissoes = Submissao::all();
+        $userId = auth()->id();
+        
+        $submissoes = Submissao::with(['atividade.problema', 'correcoes'])
+            ->where('user_id', $userId)
+            ->orderByDesc('data_submissao')
+            ->get();
 
-        return response()->json($submissoes);
+        $submissoesFormatted = collect($submissoes)->map(function (Submissao $submissao) {
+            $dados = $submissao->toArray();
+            
+            // Calcula o status real baseado nas correções
+            $statusFinal = Status::ACEITA; // Assume aceito
+            
+            if ($submissao->correcoes->isNotEmpty()) {
+                foreach ($submissao->correcoes as $correcao) {
+                    // Se encontrar algum erro, usa esse status
+                    if ($correcao->status_correcao_id && $correcao->status_correcao_id != Status::ACEITA) {
+                        $statusFinal = $correcao->status_correcao_id;
+                        break;
+                    }
+                }
+            } else {
+                // Se não tem correções, usa o status da submissão
+                $statusFinal = $submissao->status_correcao_id;
+            }
+            
+            $statusInfo = Status::get((int) $statusFinal) ?? null;
+
+            $dados['status'] = $statusInfo['nome'] ?? null;
+            $dados['status_descricao'] = $statusInfo['descricao'] ?? null;
+            
+            // Adiciona informações do problema
+            if ($submissao->atividade && $submissao->atividade->problema) {
+                $dados['problema_titulo'] = $submissao->atividade->problema->titulo;
+            }
+
+            unset($dados['status_correcao_id']);
+            unset($dados['correcoes']); // Remove correções do retorno
+            return $dados;
+        })->all();
+
+        return response()->json($submissoesFormatted);
     }
 
     /**
@@ -146,19 +185,38 @@ class SubmissaoController extends Controller
     {
         $userId = $request->user()->id;
 
-        $submissoes = Submissao::where('atividade_id', $atividade)
+        $submissoes = Submissao::with('correcoes')
+            ->where('atividade_id', $atividade)
             ->where('user_id', $userId)
             ->orderByDesc('data_submissao')
             ->paginate(10);
 
         $submissoesFormatted = collect($submissoes->items())->map(function (Submissao $submissao) {
             $dados = $submissao->toArray();
-            $statusInfo = Status::get((int) $submissao->status_correcao_id) ?? null;
+            
+            // Calcula o status real baseado nas correções
+            $statusFinal = Status::ACEITA; // Assume aceito
+            
+            if ($submissao->correcoes->isNotEmpty()) {
+                foreach ($submissao->correcoes as $correcao) {
+                    // Se encontrar algum erro, usa esse status
+                    if ($correcao->status_correcao_id && $correcao->status_correcao_id != Status::ACEITA) {
+                        $statusFinal = $correcao->status_correcao_id;
+                        break;
+                    }
+                }
+            } else {
+                // Se não tem correções, usa o status da submissão
+                $statusFinal = $submissao->status_correcao_id;
+            }
+            
+            $statusInfo = Status::get((int) $statusFinal) ?? null;
 
             $dados['status'] = $statusInfo['nome'] ?? null;
             $dados['status_descricao'] = $statusInfo['descricao'] ?? null;
 
             unset($dados['status_correcao_id']);
+            unset($dados['correcoes']); // Remove correções do retorno
             return $dados;
         })->all();
 

@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { getAllActivities } from "@/services/ActivitiesService";
 import { getAllSubmissions } from "@/services/SubmissionsService";
 import type { Activity, Submission } from "@/types";
+import { useData } from "@/context/DataContext";
 
 interface QuickStatsProps {
   title: string;
@@ -65,10 +66,11 @@ function QuickStatsCard({
 
 interface ActivityCardProps {
   activity: Activity;
+  problemTitle?: string;
   onViewActivity: (activity: Activity) => void;
 }
 
-function ActivityCard({ activity, onViewActivity }: ActivityCardProps) {
+function ActivityCard({ activity, problemTitle, onViewActivity }: ActivityCardProps) {
   // Calcula o prazo de entrega e o status da atividade (atrasada, urgente, etc)
   const dueDate = new Date(activity.dueDate);
   const now = new Date();
@@ -128,13 +130,8 @@ function ActivityCard({ activity, onViewActivity }: ActivityCardProps) {
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
           <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
-            {activity.title}
+            {problemTitle || `Atividade #${activity.id}`}
           </h3>
-          {activity.description && (
-            <p className="text-sm text-gray-500 mt-1 line-clamp-2">
-              {activity.description}
-            </p>
-          )}
         </div>
         <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition-colors ml-2" />
       </div>
@@ -183,6 +180,7 @@ export default function Home() {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
+  const { mapProblems } = useData();
 
   useEffect(() => {
     // Carrega as atividades e submissões ao montar o componente

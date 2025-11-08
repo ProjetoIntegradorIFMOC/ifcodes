@@ -58,6 +58,7 @@ class CheckSubmissionStatusJob implements ShouldQueue
         }
 
         $possuiPendentes = false;
+        $statusFinal = Status::ACEITA; // Assume aceito até encontrar erro
 
         foreach ($resultados as $resultado) {
             $correcao = $submissao->correcoes->firstWhere('token', $resultado['token']);
@@ -73,37 +74,42 @@ class CheckSubmissionStatusJob implements ShouldQueue
 
             $statusId = $resultado['status_id'];
 
+            // Se ainda está pendente, continua polling
             if (in_array($statusId, self::PENDING_STATUSES, true)) {
                 $possuiPendentes = true;
                 continue;
-            } elseif ($statusId != STATUS::ACEITA) {
-                $submissao->status_correcao_id = $statusId;
-                $submissao->save();
-                return;
+            }
+            
+            // Se não é aceito, esse é o status da submissão
+            if ($statusId != STATUS::ACEITA) {
+                $statusFinal = $statusId;
             }
 
+            // Atualiza o status da correção individual
             $correcao->status_correcao_id = $statusId;
             $correcao->save();
         }
 
         if ($possuiPendentes) {
             if ($this->remainingAttempts <= 0) {
-                Log::warning('Limite de tentativas atingido ao verificar status da submissão.', [
+                Log::error('Timeout ao aguardar resposta do Judge0.', [
                     'submissao_id' => $this->submissaoId,
                 ]);
 
-                $submissao->status_correcao_id = STATUS::TEMPO_LIMITE_EXCEDIDO;
+                // Se chegou aqui, Judge0 não respondeu - erro do sistema
+                $submissao->status_correcao_id = STATUS::ERRO_INTERNO;
                 $submissao->save();
 
                 return;
             }
 
+            // Continua tentando
             CheckSubmissionStatusJob::dispatch($this->submissaoId, $this->remainingAttempts - 1)
                 ->delay(now()->addSeconds(self::POLLING_DELAY_SECONDS));
         } else {
-            $submissao->status_correcao_id = Status::ACEITA;
+            // Todos os testes foram processados, atualiza com o status final
+            $submissao->status_correcao_id = $statusFinal;
             $submissao->save();
-            return;
         }
     }
 }

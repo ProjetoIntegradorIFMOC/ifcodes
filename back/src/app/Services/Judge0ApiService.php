@@ -102,4 +102,20 @@ class Judge0ApiService
 
         return $response['status'];
     }
+
+    /**
+    * Busca os detalhes completos de uma submissão com base no token
+    * Retorna status, stdout, stderr, compile_output, etc (todos em base64)
+    *
+    * @param string $token
+    * @return array
+    * @throws RequestException
+    */
+    public function getSubmissionFull(string $token){
+        $url = '/submissions/' . $token . '?base64_encoded=true&fields=status,stdout,stderr,compile_output,message';
+        $response = $this->client->get($url);
+        $response->throw();
+
+        return $response->json();
+    }
 }

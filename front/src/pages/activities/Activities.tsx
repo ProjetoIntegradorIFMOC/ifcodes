@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { getAllProblems } from "@/services/ProblemsServices";
 import { useData } from "@/context/DataContext";
+import Loading from "@/components/Loading";
 
 // Configuração dos possíveis status de atividades para exibição e estilização
 const statusConfig = {
@@ -136,12 +137,13 @@ export default function Activities() {
 
   // Filtra atividades conforme o texto pesquisado e o filtro de status
   const filteredActivities = activities.filter((activity) => {
-    const matchesSearch = activity.title
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase());
-    const matchesStatus =
-      statusFilter === "all" || activity.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    // const matchesSearch = activity.title
+    //   .toLowerCase()
+    //   .includes(searchTerm.toLowerCase());
+    // const matchesStatus =
+    //   statusFilter === "all" || activity.status === statusFilter;
+    // return matchesSearch && matchesStatus;
+    return true;
   });
 
   // Obtém os status únicos presentes nas atividades para montar os filtros
@@ -203,7 +205,7 @@ export default function Activities() {
       <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
         {loading ? (
           <div className="p-6">
-            <LoadingSkeleton />
+            <Loading />
           </div>
         ) : filteredActivities.length === 0 ? (
           <div className="text-center py-12">
@@ -223,12 +225,12 @@ export default function Activities() {
           <Table>
             <TableHeader>
               <TableRow className="bg-gray-50 hover:bg-gray-50">
-                <TableHead className="font-semibold text-gray-900">
+                {/* <TableHead className="font-semibold text-gray-900">
                   <div className="flex items-center gap-2">
                     <FileText className="w-4 h-4" />
                     Título
                   </div>
-                </TableHead>
+                </TableHead> */}
                 <TableHead className="font-semibold text-gray-900">
                   <div className="flex items-center gap-2">
                     <Calendar className="w-4 h-4" />
@@ -253,7 +255,7 @@ export default function Activities() {
                     onClick={() => redirectToActivity(activity)}
                     className="cursor-pointer hover:bg-blue-50 transition-colors duration-200 group"
                   >
-                    <TableCell className="font-medium">
+                    {/* <TableCell className="font-medium">
                       <div className="flex flex-col">
                         <span className="text-gray-900 group-hover:text-blue-600 transition-colors">
                           {mapProblems.get(activity.problemId)?.title}
@@ -264,7 +266,7 @@ export default function Activities() {
                           </span>
                         )}
                       </div>
-                    </TableCell>
+                    </TableCell> */}
                     <TableCell>
                       <div className="flex flex-col">
                         <span className="text-gray-900 font-medium">
