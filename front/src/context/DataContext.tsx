@@ -20,6 +20,7 @@ interface DataContextType {
   mapSubmissions: Map<number, Submission>;
   loading: boolean;
   updateSubmissions: () => Promise<void>;
+  updateActivities: () => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType>({
@@ -31,6 +32,7 @@ const DataContext = createContext<DataContextType>({
   mapSubmissions: new Map(),
   loading: false,
   updateSubmissions: async () => {},
+  updateActivities: async () => {},
 });
 
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
@@ -59,6 +61,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
       setSubmissions(submissions);
     } catch (error) {
       console.error("DataContext: Erro ao atualizar submissões:", error);
+    }
+  };
+
+  const updateActivities = async () => {
+    try {
+      const activitiesData = await getAllActivities();
+      setActivities(activitiesData.items);
+    } catch (error) {
+      console.error("DataContext: Erro ao atualizar atividades:", error);
     }
   };
 
@@ -106,6 +117,25 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
     };
   }, [submissions]);
 
+  // Polling para atualizar atividades pendentes a cada 10 segundos
+  useEffect(() => {
+    const hasPendingActivities = activities.some(
+      (a: Activity) => a.status === "pending"
+    );
+
+    if (!hasPendingActivities) {
+      return;
+    }
+
+    const intervalId = setInterval(async () => {
+      await updateActivities();
+    }, 10000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [activities]);
+
   return (
     <DataContext.Provider
       value={{
@@ -117,6 +147,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
         mapSubmissions,
         submissions,
         updateSubmissions,
+        updateActivities,
       }}
     >
       {children}
