@@ -1283,6 +1283,8 @@ function SubmissionsModal({ isOpen, onClose, activity, classId }: SubmissionsMod
         language: item.linguagem === 50 ? 'c' : 'c', // Mapear linguagem (50 = C)
       }));
       
+      mappedSubmissions.sort((a, b) => a.studentName.localeCompare(b.studentName));
+      
       setSubmissions(mappedSubmissions);
     } catch (error) {
       console.error("Erro ao carregar submissões:", error);
