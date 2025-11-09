@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { fakeSubmissionReports } from "../mocks";
-import type { SubmissionReport, TestCaseResult } from "../types";
+import type { SubmissionReport, TestCaseResult, Submission, SubmissionStatus } from "../types";
 
 /**
  * Simula uma chamada de API para buscar o relatório de submissão pelo submissionId.
@@ -24,7 +24,6 @@ export async function getSubmissionById(
   await new Promise((resolve) => setTimeout(resolve, 200));
   return fakeSubmissions.find((s) => s.id === Number(submissionId));
 }
-import type { Submission } from "../types";
 import { fakeSubmissions } from "../mocks";
 import axios from "axios";
 
@@ -182,4 +181,44 @@ export async function getSubmissionsByActivityId(
   }
 
   return [];
+}
+
+/**
+ * Busca uma submissão específica com seu código
+ * @param submissionId id da submissão
+ * @returns Promise com a submissão incluindo o código
+ */
+export async function getSubmissionWithCode(
+  submissionId: number
+): Promise<{ code: string; submission: Submission } | null> {
+  try {
+    const response = await axios.get(
+      `${API_URL}/api/submissoes/${submissionId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        withCredentials: true,
+      }
+    );
+
+    const data = response.data;
+    
+    return {
+      code: data.codigo || "",
+      submission: {
+        id: data.id,
+        activityId: data.atividade_id,
+        dateSubmitted: data.data_submissao,
+        language: data.linguagem || "c",
+        status: (data.status ? mapBackendStatusToFrontend(data.status) : "pending") as SubmissionStatus,
+        problemTitle: data.problema_titulo || null,
+      }
+    };
+  } catch (error) {
+    console.log("erro ao buscar submissão com código", error);
+    return null;
+  }
 }

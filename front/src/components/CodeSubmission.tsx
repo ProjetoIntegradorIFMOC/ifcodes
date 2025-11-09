@@ -302,3 +302,137 @@ export function CodeSubmissionComponent({ onSubmit }: CodeSubmissionProps) {
     </div>
   );
 }
+
+/**
+ * Componente de visualização de código (read-only)
+ * Similar ao CodeSubmissionComponent mas sem possibilidade de edição
+ */
+interface CodeViewerProps {
+  code: string;
+  language?: string;
+}
+
+export function CodeViewer({ code, language = "c" }: CodeViewerProps) {
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const toggleFullscreen = () => {
+    setIsFullscreen(!isFullscreen);
+  };
+
+  // Modo tela cheia
+  if (isFullscreen) {
+    return (
+      <div className="fixed inset-0 z-50 bg-white">
+        <div className="h-full flex flex-col">
+          <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <Code2 className="w-5 h-5 text-blue-600" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-900">
+                Visualização do Código - Modo Tela Cheia
+              </h2>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={toggleFullscreen}
+                className="flex items-center gap-2"
+              >
+                <Minimize2 className="w-4 h-4" />
+                Sair da Tela Cheia
+              </Button>
+              <Button variant="ghost" size="sm" onClick={toggleFullscreen}>
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-hidden">
+            <Editor
+              height="100%"
+              defaultLanguage={language}
+              value={code}
+              theme="vs-light"
+              options={{
+                readOnly: true,
+                fontSize: 16,
+                minimap: { enabled: true },
+                scrollBeyondLastLine: false,
+                automaticLayout: true,
+                tabSize: 4,
+                wordWrap: "on",
+                lineNumbers: "on",
+                renderWhitespace: "all",
+                bracketPairColorization: { enabled: true },
+                folding: true,
+                foldingHighlight: true,
+                showFoldingControls: "always",
+              }}
+            />
+          </div>
+
+          <div className="p-4 border-t border-gray-200 bg-gray-50">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-gray-600 flex items-center gap-4">
+                <span>Linhas: {code.split("\n").length}</span>
+                <span>Caracteres: {code.length}</span>
+                <span>Linguagem: {language.toUpperCase()}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Modo normal
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+      <div className="p-6 space-y-6">
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label
+              htmlFor="code-viewer"
+              className="text-sm font-medium flex items-center gap-2"
+            >
+              <Code2 className="w-4 h-4" />
+              Código Submetido:
+            </Label>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={toggleFullscreen}
+              className="flex items-center gap-2"
+            >
+              <Maximize2 className="w-4 h-4" />
+              Tela Cheia
+            </Button>
+          </div>
+
+          <div className="border border-gray-200 rounded-lg overflow-hidden">
+            <Editor
+              height="300px"
+              defaultLanguage={language}
+              value={code}
+              theme="vs-light"
+              options={{
+                readOnly: true,
+                fontSize: 14,
+                minimap: { enabled: false },
+                scrollBeyondLastLine: false,
+                automaticLayout: true,
+                tabSize: 4,
+                wordWrap: "on",
+                lineNumbers: "on",
+                renderWhitespace: "selection",
+                bracketPairColorization: { enabled: true },
+              }}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

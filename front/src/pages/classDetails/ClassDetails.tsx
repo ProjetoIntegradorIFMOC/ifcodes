@@ -1,22 +1,24 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router";
 import type { Class, ClassStudent } from "@/types/classes";
-import type { Student, Activity, Problem, Submission, SubmissionStatus } from "@/types";
+import type { Student, Activity, Problem, Submission, SubmissionStatus, TestCaseResult } from "@/types";
 import ClassesService from "@/services/ClassesService";
 import { getAllStudents } from "@/services/StudentsService";
 import { getActivitiesByClass, createActivity, updateActivity, deleteActivity, getActivitySubmissions } from "@/services/ActivitiesService";
-import { getAllProblems } from "@/services/ProblemsServices";
+import { getAllProblems, getProblemById } from "@/services/ProblemsServices";
+import { getResultBySubmissionId } from "@/services/SubmissionsService";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DateTimePicker } from "@/components/ui/date-time-picker";
 import Loading from "@/components/Loading";
 import Notification from "@/components/Notification";
-import { ArrowLeft, UserPlus, UserMinus, Users, Search, BookOpen, Plus, X, Codesandbox, Clock, HardDrive, Calendar, MoreVertical, Pencil, Trash2, CheckCircle2, AlertCircle, XCircle, Loader2 } from "lucide-react";
+import { ArrowLeft, UserPlus, UserMinus, Users, Search, BookOpen, Plus, X, Codesandbox, Clock, HardDrive, Calendar, MoreVertical, Pencil, Trash2, CheckCircle2, AlertCircle, XCircle, Loader2, Eye, EyeOff, Copy, Hash, Terminal, Target as TargetIcon, TestTube } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ProblemViewModal from "@/components/ProblemViewModal";
 import { RichTextViewer } from "@/components/RichTextEditor";
+import { CodeViewer } from "@/components/CodeSubmission";
 import {
   Table,
   TableBody,
@@ -1111,6 +1113,9 @@ interface StudentSubmission {
   studentName: string;
   submissionDate: string | null;
   status: SubmissionStatus;
+  submissionId?: number; // ID da submissão específica
+  code?: string; // Código da submissão
+  language?: string; // Linguagem de programação
 }
 
 // Configuração de status para submissões
@@ -1200,12 +1205,32 @@ interface SubmissionsModalProps {
 function SubmissionsModal({ isOpen, onClose, activity, classId }: SubmissionsModalProps) {
   const [submissions, setSubmissions] = useState<StudentSubmission[]>([]);
   const [loading, setLoading] = useState(false);
+  const [selectedSubmission, setSelectedSubmission] = useState<{
+    code: string;
+    submission: Submission;
+    studentName: string;
+  } | null>(null);
+  const [loadingDetails, setLoadingDetails] = useState(false);
+  const [testResults, setTestResults] = useState<any[]>([]);
+  const [problem, setProblem] = useState<Problem | null>(null);
 
   useEffect(() => {
     if (isOpen && activity) {
       loadSubmissions();
+      loadProblem();
     }
   }, [isOpen, activity]);
+
+  const loadProblem = async () => {
+    if (!activity) return;
+    
+    try {
+      const problemData = await getProblemById(String(activity.problemId));
+      setProblem(problemData);
+    } catch (error) {
+      console.error("Erro ao carregar problema:", error);
+    }
+  };
 
   const loadSubmissions = async () => {
     if (!activity) return;
@@ -1251,8 +1276,11 @@ function SubmissionsModal({ isOpen, onClose, activity, classId }: SubmissionsMod
       const mappedSubmissions: StudentSubmission[] = Array.from(submissionsByUser.values()).map((item: any) => ({
         studentId: item.user_id,
         studentName: item.user_name,
-        submissionDate: item.created_at, // Usa created_at que tem data e hora completas
+        submissionDate: item.created_at,
         status: mapStatusToSubmissionStatus(item.status),
+        submissionId: item.id, // Adicionar ID da submissão
+        code: item.codigo, // Adicionar código da submissão
+        language: item.linguagem === 50 ? 'c' : 'c', // Mapear linguagem (50 = C)
       }));
       
       setSubmissions(mappedSubmissions);
@@ -1280,12 +1308,146 @@ function SubmissionsModal({ isOpen, onClose, activity, classId }: SubmissionsMod
     return statusMap[status] || "unknown";
   };
 
-  const handleRowClick = (submission: StudentSubmission) => {
-    // TODO: Implementar navegação ou ação ao clicar na linha
+  const handleRowClick = async (submission: StudentSubmission & { submissionId?: number }) => {
+    if (!submission.submissionId || !submission.code) return;
+    
+    setLoadingDetails(true);
+    try {
+      // Usar o código que já está armazenado na submissão
+      setSelectedSubmission({
+        code: submission.code,
+        submission: {
+          id: submission.submissionId,
+          activityId: activity!.id,
+          dateSubmitted: submission.submissionDate || new Date().toISOString(),
+          language: (submission.language || 'c') as any,
+          status: submission.status,
+          problemTitle: null,
+        },
+        studentName: submission.studentName,
+      });
+      
+      // Carregar resultados dos testes
+      const results = await getResultBySubmissionId(submission.submissionId);
+      setTestResults(results);
+    } catch (error) {
+      console.error("Erro ao carregar detalhes da submissão:", error);
+    } finally {
+      setLoadingDetails(false);
+    }
+  };
+
+  const handleCloseDetails = () => {
+    setSelectedSubmission(null);
+    setTestResults([]);
   };
 
   if (!isOpen || !activity) return null;
 
+  // Visualização dos detalhes da submissão
+  if (selectedSubmission) {
+    return (
+      <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+          <div className="p-6 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">
+                  Submissão de {selectedSubmission.studentName}
+                </h2>
+                <p className="text-sm text-gray-500 mt-1">
+                  {new Date(selectedSubmission.submission.dateSubmitted).toLocaleString("pt-BR")}
+                </p>
+              </div>
+              <button
+                onClick={handleCloseDetails}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-6 space-y-6">
+            {/* Código submetido */}
+            <CodeViewer code={selectedSubmission.code} language={selectedSubmission.submission.language} />
+
+            {/* Casos de teste */}
+            {problem && problem.testCases && problem.testCases.length > 0 && (
+              <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+                <div className="border-b border-gray-200 p-6">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-green-100 rounded-lg">
+                      <TestTube className="w-5 h-5 text-green-600" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-900">
+                      Casos de Teste
+                    </h2>
+                  </div>
+                </div>
+
+                <div className="p-6">
+                  <div className="overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-gray-50 hover:bg-gray-50">
+                          <TableHead className="font-semibold text-gray-900">
+                            <div className="flex items-center gap-2">
+                              <Hash className="w-4 h-4" />
+                              Teste
+                            </div>
+                          </TableHead>
+                          <TableHead className="font-semibold text-gray-900">
+                            <div className="flex items-center gap-2">
+                              <Clock className="w-4 h-4" />
+                              Status
+                            </div>
+                          </TableHead>
+                          <TableHead className="font-semibold text-gray-900">
+                            <div className="flex items-center gap-2">
+                              <Terminal className="w-4 h-4" />
+                              Saída Atual
+                            </div>
+                          </TableHead>
+                          <TableHead className="font-semibold text-gray-900">
+                            <div className="flex items-center gap-2">
+                              <TargetIcon className="w-4 h-4" />
+                              Saída Esperada
+                            </div>
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {problem.testCases.map((testCase, index) => {
+                          const result = testResults.find(r => r.testCaseId === testCase.id);
+                          return (
+                            <TestCaseRow
+                              key={testCase.id}
+                              testCase={testCase}
+                              result={result}
+                              index={index}
+                            />
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="p-6 border-t border-gray-200 flex justify-end">
+            <Button onClick={handleCloseDetails} variant="outline">
+              Voltar para lista
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Lista de submissões
   return (
     <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col">
@@ -1345,7 +1507,7 @@ function SubmissionsModal({ isOpen, onClose, activity, classId }: SubmissionsMod
                   {submissions.map((submission) => (
                     <TableRow
                       key={submission.studentId}
-                      onClick={() => handleRowClick(submission)}
+                      onClick={() => handleRowClick(submission as StudentSubmission & { submissionId?: number })}
                       className="cursor-pointer hover:bg-blue-50 transition-colors duration-200 group"
                     >
                       <TableCell className="font-medium">
@@ -1380,8 +1542,105 @@ function SubmissionsModal({ isOpen, onClose, activity, classId }: SubmissionsMod
               </Table>
             </div>
           )}
+          
+          {loadingDetails && (
+            <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg p-6 shadow-xl">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-2" />
+                <p className="text-gray-600">Carregando detalhes...</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
+  );
+}
+
+// Componente auxiliar para linha de caso de teste
+interface TestCaseRowProps {
+  testCase: any;
+  result: any;
+  index: number;
+}
+
+function TestCaseRow({ testCase, result, index }: TestCaseRowProps) {
+  const [showOutput, setShowOutput] = useState(false);
+  
+  const actualOutput = result?.stdout || result?.stderr || "Sem saída";
+  const expectedOutput = testCase.expectedOutput || "Sem saída esperada";
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+  };
+
+  return (
+    <TableRow className="hover:bg-gray-50 transition-colors duration-200">
+      <TableCell className="font-medium">
+        <div className="flex items-center gap-2">
+          <Hash className="w-4 h-4 text-gray-400" />
+          <span>Teste {index + 1}</span>
+        </div>
+      </TableCell>
+      <TableCell>
+        <SubmissionStatusBadge status={(result?.status || 'pending') as SubmissionStatus} />
+      </TableCell>
+      <TableCell>
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowOutput(!showOutput)}
+              className="h-6 px-2 text-xs"
+            >
+              {showOutput ? (
+                <EyeOff className="w-3 h-3" />
+              ) : (
+                <Eye className="w-3 h-3" />
+              )}
+              {showOutput ? "Ocultar" : "Mostrar"}
+            </Button>
+            {actualOutput && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => copyToClipboard(actualOutput)}
+                className="h-6 px-2 text-xs"
+              >
+                <Copy className="w-3 h-3" />
+              </Button>
+            )}
+          </div>
+          {showOutput && (
+            <div className="bg-gray-900 rounded p-2 max-w-xs">
+              <pre className="text-xs text-gray-300 whitespace-pre-wrap overflow-auto max-h-20">
+                {actualOutput}
+              </pre>
+            </div>
+          )}
+        </div>
+      </TableCell>
+      <TableCell>
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => copyToClipboard(expectedOutput)}
+              className="h-6 px-2 text-xs"
+            >
+              <Copy className="w-3 h-3" />
+              Copiar
+            </Button>
+          </div>
+          <div className="bg-gray-900 rounded p-2 max-w-xs">
+            <pre className="text-xs text-gray-300 whitespace-pre-wrap overflow-auto max-h-20">
+              {expectedOutput}
+            </pre>
+          </div>
+        </div>
+      </TableCell>
+    </TableRow>
   );
 }
