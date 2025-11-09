@@ -38,43 +38,37 @@ class SubmissaoController extends Controller
     public function index()
     {
         $userId = auth()->id();
-        
-        $submissoes = Submissao::with(['atividade.problema', 'correcoes'])
+
+        $submissoes = Submissao::with(['atividade.problema'])
             ->where('user_id', $userId)
             ->orderByDesc('data_submissao')
             ->get();
 
         $submissoesFormatted = collect($submissoes)->map(function (Submissao $submissao) {
             $dados = $submissao->toArray();
-            
-            // Calcula o status real baseado nas correções
-            $statusFinal = Status::ACEITA; // Assume aceito
-            
-            if ($submissao->correcoes->isNotEmpty()) {
-                foreach ($submissao->correcoes as $correcao) {
-                    // Se encontrar algum erro, usa esse status
-                    if ($correcao->status_correcao_id && $correcao->status_correcao_id != Status::ACEITA) {
-                        $statusFinal = $correcao->status_correcao_id;
-                        break;
-                    }
-                }
-            } else {
-                // Se não tem correções, usa o status da submissão
-                $statusFinal = $submissao->status_correcao_id;
-            }
-            
-            $statusInfo = Status::get((int) $statusFinal) ?? null;
 
-            $dados['status'] = $statusInfo['nome'] ?? null;
-            $dados['status_descricao'] = $statusInfo['descricao'] ?? null;
-            
+            // Usa o getStatus() que já busca corretamente do Judge0
+            try {
+                $statusData = $submissao->getStatus();
+
+                $dados['status'] = $statusData['status'] ?? null;
+                $dados['status_descricao'] = $statusData['status'] ?? null;
+            } catch (Exception $e) {
+                \Log::error("Erro ao buscar status da submissão {$submissao->id}: " . $e->getMessage());
+
+                // Fallback para o status da submissão
+                $statusInfo = Status::get((int) $submissao->status_correcao_id) ?? null;
+                $dados['status'] = $statusInfo['nome'] ?? null;
+                $dados['status_descricao'] = $statusInfo['descricao'] ?? null;
+            }
+
             // Adiciona informações do problema
             if ($submissao->atividade && $submissao->atividade->problema) {
                 $dados['problema_titulo'] = $submissao->atividade->problema->titulo;
             }
 
             unset($dados['status_correcao_id']);
-            unset($dados['correcoes']); // Remove correções do retorno
+            unset($dados['correcoes']);
             return $dados;
         })->all();
 
@@ -185,7 +179,7 @@ class SubmissaoController extends Controller
     {
         $userId = $request->user()->id;
 
-        $submissoes = Submissao::with('correcoes')
+        $submissoes = Submissao::with('atividade.problema')
             ->where('atividade_id', $atividade)
             ->where('user_id', $userId)
             ->orderByDesc('data_submissao')
@@ -193,30 +187,24 @@ class SubmissaoController extends Controller
 
         $submissoesFormatted = collect($submissoes->items())->map(function (Submissao $submissao) {
             $dados = $submissao->toArray();
-            
-            // Calcula o status real baseado nas correções
-            $statusFinal = Status::ACEITA; // Assume aceito
-            
-            if ($submissao->correcoes->isNotEmpty()) {
-                foreach ($submissao->correcoes as $correcao) {
-                    // Se encontrar algum erro, usa esse status
-                    if ($correcao->status_correcao_id && $correcao->status_correcao_id != Status::ACEITA) {
-                        $statusFinal = $correcao->status_correcao_id;
-                        break;
-                    }
-                }
-            } else {
-                // Se não tem correções, usa o status da submissão
-                $statusFinal = $submissao->status_correcao_id;
-            }
-            
-            $statusInfo = Status::get((int) $statusFinal) ?? null;
 
-            $dados['status'] = $statusInfo['nome'] ?? null;
-            $dados['status_descricao'] = $statusInfo['descricao'] ?? null;
+            // Usa o getStatus() que já busca corretamente do Judge0
+            try {
+                $statusData = $submissao->getStatus();
+
+                $dados['status'] = $statusData['status'] ?? null;
+                $dados['status_descricao'] = $statusData['status'] ?? null;
+            } catch (Exception $e) {
+                \Log::error("Erro ao buscar status da submissão {$submissao->id}: " . $e->getMessage());
+
+                // Fallback para o status da submissão
+                $statusInfo = Status::get((int) $submissao->status_correcao_id) ?? null;
+                $dados['status'] = $statusInfo['nome'] ?? null;
+                $dados['status_descricao'] = $statusInfo['descricao'] ?? null;
+            }
 
             unset($dados['status_correcao_id']);
-            unset($dados['correcoes']); // Remove correções do retorno
+            unset($dados['correcoes']);
             return $dados;
         })->all();
 
@@ -234,146 +222,4 @@ class SubmissaoController extends Controller
 
         return response()->json($response);
     }
-
-    /**
-     * @OA\Get(
-     *      path="/api/turmas/{turma_id}/atividades/{atividade_id}/submissoes",
-     *      operationId="getSubmissionsByActivity",
-     *      tags={"Submissões"},
-     *      summary="Lista todas as submissões de uma atividade",
-     *      description="Retorna todas as submissões de uma atividade específica de uma turma. Apenas professores e administradores têm acesso.",
-     *      @OA\Parameter(
-     *          name="turma_id",
-     *          in="path",
-     *          required=true,
-     *          description="ID da turma",
-     *          @OA\Schema(type="integer")
-     *      ),
-     *      @OA\Parameter(
-     *          name="atividade_id",
-     *          in="path",
-     *          required=true,
-     *          description="ID da atividade",
-     *          @OA\Schema(type="integer")
-     *      ),
-     *      @OA\Response(
-     *          response=200,
-     *          description="Lista de submissões retornada com sucesso",
-     *          @OA\JsonContent(
-     *              type="object",
-     *              @OA\Property(property="turma_id", type="integer", example=1),
-     *              @OA\Property(property="atividade_id", type="integer", example=1),
-     *              @OA\Property(
-     *                  property="submissoes",
-     *                  type="array",
-     *                  @OA\Items(
-     *                      type="object",
-     *                      @OA\Property(property="id", type="integer"),
-     *                      @OA\Property(property="user_id", type="integer"),
-     *                      @OA\Property(property="user_name", type="string"),
-     *                      @OA\Property(property="data_submissao", type="string", format="date-time"),
-     *                      @OA\Property(property="status", type="string"),
-     *                      @OA\Property(property="status_descricao", type="string")
-     *                  )
-     *              )
-     *          )
-     *       ),
-     *      @OA\Response(response=403, description="Acesso negado - apenas professores e administradores"),
-     *      @OA\Response(response=404, description="Atividade não encontrada ou não pertence à turma")
-     * )
-     */
-    public function getSubmissionsByActivity(Request $request, int $turmaId, int $atividadeId)
-    {
-        // Verificar se o usuário tem permissão (professor ou admin)
-        $user = $request->user();
-        
-        if (!$user->hasAnyRole(['professor', 'admin'])) {
-            return response()->json([
-                'message' => 'Acesso negado. Apenas professores e administradores podem visualizar todas as submissões.'
-            ], 403);
-        }
-
-        // Verificar se a atividade pertence à turma
-        $atividade = \App\Models\Atividade::where('id', $atividadeId)
-            ->where('turma_id', $turmaId)
-            ->first();
-
-        if (!$atividade) {
-            return response()->json([
-                'message' => 'Atividade não encontrada ou não pertence a esta turma.'
-            ], 404);
-        }
-
-        // Buscar todas as submissões da atividade com informações do usuário
-        $submissoes = Submissao::with(['correcoes', 'user'])
-            ->where('atividade_id', $atividadeId)
-            ->orderByDesc('data_submissao')
-            ->get();
-
-        // Formatar as submissões
-        $submissoesFormatted = $submissoes->map(function (Submissao $submissao) {
-            $dados = $submissao->toArray();
-            
-            // Calcula o status real baseado nas correções
-            $statusFinal = Status::ACEITA;
-            
-            if ($submissao->correcoes->isNotEmpty()) {
-                foreach ($submissao->correcoes as $correcao) {
-                    if ($correcao->status_correcao_id && $correcao->status_correcao_id != Status::ACEITA) {
-                        $statusFinal = $correcao->status_correcao_id;
-                        break;
-                    }
-                }
-            } else {
-                $statusFinal = $submissao->status_correcao_id;
-            }
-            
-            $statusInfo = Status::get((int) $statusFinal) ?? null;
-
-            $dados['status'] = $statusInfo['nome'] ?? null;
-            $dados['status_descricao'] = $statusInfo['descricao'] ?? null;
-            
-            // Adicionar informações do usuário
-            if ($submissao->user) {
-                $dados['user_name'] = $submissao->user->name;
-                $dados['user_email'] = $submissao->user->email;
-            }
-
-            unset($dados['status_correcao_id']);
-            unset($dados['correcoes']);
-            unset($dados['user']); // Remove objeto user completo
-            
-            return $dados;
-        })->all();
-
-        $response = [
-            'turma_id' => $turmaId,
-            'atividade_id' => $atividadeId,
-            'total_submissoes' => count($submissoesFormatted),
-            'submissoes' => $submissoesFormatted,
-        ];
-
-        return response()->json($response);
-    }
-
-    //    /**
-    //     * Update the specified resource in storage.
-    //     */
-    //    public function update(Request $request, Problema $submissao)
-    //    {
-    //
-    //    }
-    //    /**
-    //     * Remove the specified resource from storage.
-    //     */
-    //    public function destroy(Submissao $submissao)
-    //    {
-    //        try{
-    //            $submissao->delete();
-    //        } catch(Exception $e){
-    //            return response()->json(['Erro ao apagar.'], 400);
-    //        }
-    //
-    //        return response()->json(['Apagado com sucesso!']);
-    //    }
 }
