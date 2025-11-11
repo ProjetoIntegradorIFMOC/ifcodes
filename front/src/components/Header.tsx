@@ -38,7 +38,7 @@ export default function Header() {
 
   // Define os itens de navegação baseado nas permissões
   const navigationItems: NavigationItem[] = [
-    { to: "/home", label: "Dashboard" },
+    { to: "/", label: "Dashboard" },
     { to: "/activities", label: "Atividades" },
     { to: "/submissions", label: "Submissões" },
     { to: "/classes", label: "Turmas" },
@@ -131,7 +131,7 @@ export default function Header() {
             {/* Logo e nome do app */}
             <div className="flex-shrink-0">
               <Link
-                to="/home"
+                to="/"
                 className="flex items-center space-x-2 group"
                 onClick={closeMobileMenu}
               >

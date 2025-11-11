@@ -148,8 +148,7 @@ function LoadingSpinner() {
   return (
     <div className="flex items-center justify-center min-h-[400px]">
       <div className="text-center">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
-        <p className="text-gray-600">Carregando detalhes da atividade...</p>
+        <Loading />
       </div>
     </div>
   );
@@ -412,10 +411,7 @@ export default function ActivitiesDetails() {
         <div className="p-6">
           {localLoading ? (
             <div className="text-center py-8">
-              <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                Carregando submissões...
-              </h3>
+              <Loading />
             </div>
           ) : activitySubmissions.length === 0 ? (
             <div className="text-center py-8">
