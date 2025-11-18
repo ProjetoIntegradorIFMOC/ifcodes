@@ -39,6 +39,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('alunos', AlunoController::class);
     Route::apiResource('turmas', TurmaController::class);
 
+    // Rota para listar todas as submissões de uma atividade de uma turma (apenas professor/admin)
+    Route::get('/turmas/{turma_id}/atividades/{atividade_id}/submissoes', [SubmissaoController::class, 'getSubmissionsByActivity']);
+
     Route::get('/submissoes/atividades/{atividade}', [SubmissaoController::class, 'getSubmissionByUser']);
     Route::apiResource('submissoes', SubmissaoController::class)
         ->except('update', 'destroy')

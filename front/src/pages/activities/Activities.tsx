@@ -20,7 +20,9 @@ import {
   Search,
   Filter,
   ArrowRight,
+  RefreshCw,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { getAllProblems } from "@/services/ProblemsServices";
 import { useData } from "@/context/DataContext";
 import Loading from "@/components/Loading";
@@ -124,10 +126,25 @@ function LoadingSkeleton() {
 export default function Activities() {
   const navigate = useNavigate();
 
-  const { activities, mapActivities, mapProblems, loading } = useData();
+  const { activities, mapActivities, mapProblems, loading, updateActivities } = useData();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    updateActivities();
+  }, []);
+
+  // Atualiza os dados ao clicar em "Atualizar"
+  async function refreshData() {
+    setRefreshing(true);
+    try {
+      await updateActivities();
+    } finally {
+      setRefreshing(false);
+    }
+  }
 
   // Redireciona para o detalhe da atividade ao clicar na linha
   function redirectToActivity(activity: Activity) {
@@ -164,9 +181,22 @@ export default function Activities() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 text-sm text-gray-500">
-          <Calendar className="w-4 h-4" />
-          {activities.length} atividade{activities.length !== 1 ? "s" : ""}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 text-sm text-gray-500">
+            <Calendar className="w-4 h-4" />
+            {activities.length} atividade{activities.length !== 1 ? "s" : ""}
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={refreshData}
+            disabled={loading || refreshing}
+          >
+            <RefreshCw
+              className={`w-4 h-4 mr-2 ${(loading || refreshing) ? "animate-spin" : ""}`}
+            />
+            Atualizar
+          </Button>
         </div>
       </div>
 

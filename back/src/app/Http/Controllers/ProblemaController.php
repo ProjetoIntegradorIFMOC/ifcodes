@@ -30,7 +30,9 @@ class ProblemaController extends Controller
      */
     public function index()
     {
-        $problemas = ProblemaService::listarTodos(Auth::id());
+        // Retorna todos os problemas para todos os usuários autenticados
+        // Estudantes precisam ver os problemas das suas atividades
+        $problemas = ProblemaService::listarTodos(Auth::id(), false);
         return response()->json($problemas);
     }
 

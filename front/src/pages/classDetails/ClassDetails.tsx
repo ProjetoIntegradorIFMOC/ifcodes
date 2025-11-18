@@ -1,22 +1,32 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router";
 import type { Class, ClassStudent } from "@/types/classes";
-import type { Student, Activity, Problem } from "@/types";
+import type { Student, Activity, Problem, Submission, SubmissionStatus, TestCaseResult } from "@/types";
 import ClassesService from "@/services/ClassesService";
 import { getAllStudents } from "@/services/StudentsService";
-import { getActivitiesByClass, createActivity, updateActivity, deleteActivity } from "@/services/ActivitiesService";
-import { getAllProblems } from "@/services/ProblemsServices";
+import { getActivitiesByClass, createActivity, updateActivity, deleteActivity, getActivitySubmissions } from "@/services/ActivitiesService";
+import { getAllProblems, getProblemById } from "@/services/ProblemsServices";
+import { getResultBySubmissionId } from "@/services/SubmissionsService";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DateTimePicker } from "@/components/ui/date-time-picker";
 import Loading from "@/components/Loading";
 import Notification from "@/components/Notification";
-import { ArrowLeft, UserPlus, UserMinus, Users, Search, BookOpen, Plus, X, Codesandbox, Clock, HardDrive, Calendar, MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { ArrowLeft, UserPlus, UserMinus, Users, Search, BookOpen, Plus, X, Codesandbox, Clock, HardDrive, Calendar, MoreVertical, Pencil, Trash2, CheckCircle2, AlertCircle, XCircle, Loader2, Eye, EyeOff, Copy, Hash, Terminal, Target as TargetIcon, TestTube } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ProblemViewModal from "@/components/ProblemViewModal";
 import { RichTextViewer } from "@/components/RichTextEditor";
+import { CodeViewer } from "@/components/CodeSubmission";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/table";
 
 export default function ClassDetails() {
   const { id } = useParams<{ id: string }>();
@@ -46,6 +56,7 @@ export default function ClassDetails() {
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
   const [deletingActivity, setDeletingActivity] = useState<Activity | null>(null);
   const [openMenuId, setOpenMenuId] = useState<number | null>(null);
+  const [viewSubmissionsActivity, setViewSubmissionsActivity] = useState<Activity | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -322,18 +333,17 @@ export default function ClassDetails() {
                   const isOverdue = dueDate < now;
                   const isPending = !isOverdue;
                   const problem = allProblems.find(p => p.id === activity.problemId);
-
+                  
                   return (
                     <div
                       key={activity.id}
-                      className={`p-4 rounded-lg border-l-4 transition-colors cursor-pointer hover:shadow-md ${
+                      className={`p-4 pb-14 rounded-lg border-l-4 transition-colors hover:shadow-md relative ${
                         isOverdue
                           ? "bg-red-50 border-red-500"
                           : isPending
                           ? "bg-yellow-50 border-yellow-500"
                           : "bg-green-50 border-green-500"
                       }`}
-                      onClick={() => setViewActivity(activity)}
                     >
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
@@ -347,21 +357,6 @@ export default function ClassDetails() {
                               minute: "2-digit",
                             })}
                           </p>
-                          <span
-                            className={`inline-block mt-2 px-2 py-1 rounded text-xs font-medium ${
-                              isOverdue
-                                ? "bg-red-100 text-red-700"
-                                : isPending
-                                ? "bg-yellow-100 text-yellow-700"
-                                : "bg-green-100 text-green-700"
-                            }`}
-                          >
-                            {isOverdue
-                              ? "Atrasada"
-                              : isPending
-                              ? "Pendente"
-                              : "Concluída"}
-                          </span>
                         </div>
                         {hasAnyRole(["professor", "admin"]) && (
                           <div className="relative ml-4 activity-menu">
@@ -409,6 +404,65 @@ export default function ClassDetails() {
                           </div>
                         )}
                       </div>
+                      
+                      {/* Botões de ação */}
+                      <div className="absolute bottom-3 left-3 flex gap-2">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            console.log('', {
+                              activity,
+                              allProblemsLength: allProblems.length,
+                              foundProblem: allProblems.find(p => p.id === activity.problemId)
+                            });
+                            setViewActivity(activity);
+                          }}
+                          className={`px-3 py-1.5 text-xs font-medium text-gray-700 rounded-full transition-colors ${
+                            isOverdue
+                              ? "hover:bg-red-100"
+                              : isPending
+                              ? "hover:bg-yellow-100"
+                              : "hover:bg-green-100"
+                          }`}
+                        >
+                          Ver Problema
+                        </button>
+                        {hasAnyRole(["professor", "admin"]) && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setViewSubmissionsActivity(activity);
+                            }}
+                            className={`px-3 py-1.5 text-xs font-medium text-gray-700 rounded-full transition-colors ${
+                              isOverdue
+                                ? "hover:bg-red-100"
+                                : isPending
+                                ? "hover:bg-yellow-100"
+                                : "hover:bg-green-100"
+                            }`}
+                          >
+                            Ver Submissões
+                          </button>
+                        )}
+                      </div>
+
+                      <span
+                        className={`absolute bottom-3 right-10 px-2 py-1 rounded text-xs font-medium ${
+                          isOverdue
+                            ? "bg-red-100 text-red-700"
+                            : isPending
+                            ? "bg-yellow-100 text-yellow-700"
+                            : "bg-green-100 text-green-700"
+                        }`}
+                      >
+                        {isOverdue
+                          ? "Atrasada"
+                          : isPending
+                          ? "Pendente"
+                          : "Concluída"}
+                      </span>
                     </div>
                   );
                 })
@@ -570,6 +624,13 @@ export default function ClassDetails() {
         isOpen={!!viewProblem}
         problem={viewProblem}
         onClose={() => setViewProblem(null)}
+      />
+
+      <SubmissionsModal
+        isOpen={!!viewSubmissionsActivity}
+        onClose={() => setViewSubmissionsActivity(null)}
+        activity={viewSubmissionsActivity}
+        classId={Number(id)}
       />
       
     </div>
@@ -1043,5 +1104,545 @@ function DeleteActivityModal({ isOpen, onClose, onConfirm, activityTitle }: Dele
         </div>
       </div>
     </div>
+  );
+}
+
+// Tipo para submissões dos alunos
+interface StudentSubmission {
+  studentId: number;
+  studentName: string;
+  submissionDate: string | null;
+  status: SubmissionStatus;
+  submissionId?: number; // ID da submissão específica
+  code?: string; // Código da submissão
+  language?: string; // Linguagem de programação
+}
+
+// Configuração de status para submissões
+const submissionStatusConfig = {
+  passed: {
+    label: "Aprovado",
+    icon: CheckCircle2,
+    className: "bg-green-100 text-green-800 border-green-200",
+    dotColor: "bg-green-500",
+  },
+  failed: {
+    label: "Resposta Errada",
+    icon: XCircle,
+    className: "bg-red-100 text-red-800 border-red-200",
+    dotColor: "bg-red-500",
+  },
+  pending: {
+    label: "Pendente",
+    icon: Clock,
+    className: "bg-yellow-100 text-yellow-800 border-yellow-200",
+    dotColor: "bg-yellow-500",
+  },
+  processing: {
+    label: "Processando",
+    icon: Loader2,
+    className: "bg-blue-100 text-blue-800 border-blue-200",
+    dotColor: "bg-blue-500",
+  },
+  "compile-error": {
+    label: "Erro de Compilação",
+    icon: AlertCircle,
+    className: "bg-orange-100 text-orange-800 border-orange-200",
+    dotColor: "bg-orange-500",
+  },
+  timeout: {
+    label: "Tempo Excedido",
+    icon: Clock,
+    className: "bg-purple-100 text-purple-800 border-purple-200",
+    dotColor: "bg-purple-500",
+  },
+  "runtime-error": {
+    label: "Erro de Execução",
+    icon: AlertCircle,
+    className: "bg-pink-100 text-pink-800 border-pink-200",
+    dotColor: "bg-pink-500",
+  },
+  "internal-error": {
+    label: "Erro Interno",
+    icon: XCircle,
+    className: "bg-gray-100 text-gray-800 border-gray-200",
+    dotColor: "bg-gray-500",
+  },
+  unknown: {
+    label: "Desconhecido",
+    icon: AlertCircle,
+    className: "bg-gray-100 text-gray-800 border-gray-200",
+    dotColor: "bg-gray-500",
+  },
+} as const;
+
+interface SubmissionStatusBadgeProps {
+  status: SubmissionStatus;
+}
+
+function SubmissionStatusBadge({ status }: SubmissionStatusBadgeProps) {
+  const config = submissionStatusConfig[status] || submissionStatusConfig.unknown;
+  const Icon = config.icon;
+
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${config.className}`}
+    >
+      <div className={`w-1.5 h-1.5 rounded-full ${config.dotColor}`} />
+      <Icon className="w-3 h-3" />
+      {config.label}
+    </span>
+  );
+}
+
+interface SubmissionsModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  activity: Activity | null;
+  classId: number;
+}
+
+function SubmissionsModal({ isOpen, onClose, activity, classId }: SubmissionsModalProps) {
+  const [submissions, setSubmissions] = useState<StudentSubmission[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [selectedSubmission, setSelectedSubmission] = useState<{
+    code: string;
+    submission: Submission;
+    studentName: string;
+  } | null>(null);
+  const [loadingDetails, setLoadingDetails] = useState(false);
+  const [testResults, setTestResults] = useState<any[]>([]);
+  const [problem, setProblem] = useState<Problem | null>(null);
+
+  useEffect(() => {
+    if (isOpen && activity) {
+      loadSubmissions();
+      loadProblem();
+    }
+  }, [isOpen, activity]);
+
+  const loadProblem = async () => {
+    if (!activity) return;
+    
+    try {
+      const problemData = await getProblemById(String(activity.problemId));
+      setProblem(problemData);
+    } catch (error) {
+      console.error("Erro ao carregar problema:", error);
+    }
+  };
+
+  const loadSubmissions = async () => {
+    if (!activity) return;
+    
+    setLoading(true);
+    try {
+      const data = await getActivitySubmissions(classId, activity.id);
+      
+      // Agrupar submissões por usuário e aplicar lógica de priorização
+      const submissionsByUser = new Map<number, any>();
+      
+      data.forEach((item: any) => {
+        const userId = item.user_id;
+        const existing = submissionsByUser.get(userId);
+        
+        if (!existing) {
+          // Se não existe submissão deste usuário, adiciona
+          submissionsByUser.set(userId, item);
+        } else {
+          const isCurrentAccepted = item.status === "Aceita";
+          const isExistingAccepted = existing.status === "Aceita";
+          const currentDate = new Date(item.created_at);
+          const existingDate = new Date(existing.created_at);
+          
+          // Lógica de priorização:
+          // 1. Se a atual é Aceita e a existente não é → substitui
+          // 2. Se ambas são Aceita → pega a mais recente
+          // 3. Se nenhuma é Aceita → pega a mais recente
+          // 4. Se a existente é Aceita e a atual não é → mantém a existente
+          
+          if (isCurrentAccepted && !isExistingAccepted) {
+            submissionsByUser.set(userId, item);
+          } else if (isCurrentAccepted && isExistingAccepted && currentDate > existingDate) {
+            submissionsByUser.set(userId, item);
+          } else if (!isCurrentAccepted && !isExistingAccepted && currentDate > existingDate) {
+            submissionsByUser.set(userId, item);
+          }
+          // Caso contrário, mantém a existente (não faz nada)
+        }
+      });
+      
+      // Mapear os dados da API para o formato esperado pelo componente
+      const mappedSubmissions: StudentSubmission[] = Array.from(submissionsByUser.values()).map((item: any) => ({
+        studentId: item.user_id,
+        studentName: item.user_name,
+        submissionDate: item.created_at,
+        status: mapStatusToSubmissionStatus(item.status),
+        submissionId: item.id, // Adicionar ID da submissão
+        code: item.codigo, // Adicionar código da submissão
+        language: item.linguagem === 50 ? 'c' : 'c', // Mapear linguagem (50 = C)
+      }));
+      
+      mappedSubmissions.sort((a, b) => a.studentName.localeCompare(b.studentName));
+      
+      setSubmissions(mappedSubmissions);
+    } catch (error) {
+      console.error("Erro ao carregar submissões:", error);
+      setSubmissions([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Função auxiliar para mapear status da API para SubmissionStatus
+  const mapStatusToSubmissionStatus = (status: string): SubmissionStatus => {
+    const statusMap: Record<string, SubmissionStatus> = {
+      "Aceita": "passed",
+      "Resposta Errada": "failed",
+      "Erro de Compilação": "compile-error",
+      "Erro de Execução (NZEC)": "runtime-error",
+      "Tempo Limite Excedido": "timeout",
+      "Erro Interno": "internal-error",
+      "Processando": "processing",
+      "Pendente": "pending",
+    };
+    
+    return statusMap[status] || "unknown";
+  };
+
+  const handleRowClick = async (submission: StudentSubmission & { submissionId?: number }) => {
+    if (!submission.submissionId || !submission.code) return;
+    
+    setLoadingDetails(true);
+    try {
+      // Usar o código que já está armazenado na submissão
+      setSelectedSubmission({
+        code: submission.code,
+        submission: {
+          id: submission.submissionId,
+          activityId: activity!.id,
+          dateSubmitted: submission.submissionDate || new Date().toISOString(),
+          language: (submission.language || 'c') as any,
+          status: submission.status,
+          problemTitle: null,
+        },
+        studentName: submission.studentName,
+      });
+      
+      // Carregar resultados dos testes
+      const results = await getResultBySubmissionId(submission.submissionId);
+      setTestResults(results);
+    } catch (error) {
+      console.error("Erro ao carregar detalhes da submissão:", error);
+    } finally {
+      setLoadingDetails(false);
+    }
+  };
+
+  const handleCloseDetails = () => {
+    setSelectedSubmission(null);
+    setTestResults([]);
+  };
+
+  if (!isOpen || !activity) return null;
+
+  // Visualização dos detalhes da submissão
+  if (selectedSubmission) {
+    return (
+      <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+          <div className="p-6 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">
+                  Submissão de {selectedSubmission.studentName}
+                </h2>
+                <p className="text-sm text-gray-500 mt-1">
+                  {new Date(selectedSubmission.submission.dateSubmitted).toLocaleString("pt-BR")}
+                </p>
+              </div>
+              <button
+                onClick={handleCloseDetails}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-6 space-y-6">
+            {/* Código submetido */}
+            <CodeViewer code={selectedSubmission.code} language={selectedSubmission.submission.language} />
+
+            {/* Casos de teste */}
+            {problem && problem.testCases && problem.testCases.length > 0 && (
+              <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+                <div className="border-b border-gray-200 p-6">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-green-100 rounded-lg">
+                      <TestTube className="w-5 h-5 text-green-600" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-900">
+                      Casos de Teste
+                    </h2>
+                  </div>
+                </div>
+
+                <div className="p-6">
+                  <div className="overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-gray-50 hover:bg-gray-50">
+                          <TableHead className="font-semibold text-gray-900">
+                            <div className="flex items-center gap-2">
+                              <Hash className="w-4 h-4" />
+                              Teste
+                            </div>
+                          </TableHead>
+                          <TableHead className="font-semibold text-gray-900">
+                            <div className="flex items-center gap-2">
+                              <Clock className="w-4 h-4" />
+                              Status
+                            </div>
+                          </TableHead>
+                          <TableHead className="font-semibold text-gray-900">
+                            <div className="flex items-center gap-2">
+                              <Terminal className="w-4 h-4" />
+                              Saída Atual
+                            </div>
+                          </TableHead>
+                          <TableHead className="font-semibold text-gray-900">
+                            <div className="flex items-center gap-2">
+                              <TargetIcon className="w-4 h-4" />
+                              Saída Esperada
+                            </div>
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {problem.testCases.map((testCase, index) => {
+                          const result = testResults.find(r => r.testCaseId === testCase.id);
+                          return (
+                            <TestCaseRow
+                              key={testCase.id}
+                              testCase={testCase}
+                              result={result}
+                              index={index}
+                            />
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="p-6 border-t border-gray-200 flex justify-end">
+            <Button onClick={handleCloseDetails} variant="outline">
+              Voltar para lista
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Lista de submissões
+  return (
+    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="p-6 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-gray-900">Submissões da Atividade</h2>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-6">
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loading />
+            </div>
+          ) : submissions.length === 0 ? (
+            <div className="text-center py-12">
+              <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                Nenhuma submissão encontrada
+              </h3>
+              <p className="text-gray-500">
+                Ainda não há submissões para esta atividade
+              </p>
+            </div>
+          ) : (
+            <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-gray-50 hover:bg-gray-50">
+                    <TableHead className="font-semibold text-gray-900">
+                      <div className="flex items-center gap-2">
+                        <Users className="w-4 h-4" />
+                        Nome
+                      </div>
+                    </TableHead>
+                    <TableHead className="font-semibold text-gray-900">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4" />
+                        Data de Submissão
+                      </div>
+                    </TableHead>
+                    <TableHead className="font-semibold text-gray-900">
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4" />
+                        Status
+                      </div>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {submissions.map((submission) => (
+                    <TableRow
+                      key={submission.studentId}
+                      onClick={() => handleRowClick(submission as StudentSubmission & { submissionId?: number })}
+                      className="cursor-pointer hover:bg-blue-50 transition-colors duration-200 group"
+                    >
+                      <TableCell className="font-medium">
+                        <span className="text-gray-900 group-hover:text-blue-600 transition-colors">
+                          {submission.studentName}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        {submission.submissionDate ? (
+                          <div className="flex flex-col">
+                            <span className="text-gray-900 font-medium">
+                              {new Date(submission.submissionDate).toLocaleDateString("pt-BR")}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              {new Date(submission.submissionDate).toLocaleTimeString("pt-BR", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                                second: "2-digit",
+                              })}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-gray-400 text-sm">Não submetido</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <SubmissionStatusBadge status={submission.status} />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+          
+          {loadingDetails && (
+            <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg p-6 shadow-xl">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-2" />
+                <p className="text-gray-600">Carregando detalhes...</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Componente auxiliar para linha de caso de teste
+interface TestCaseRowProps {
+  testCase: any;
+  result: any;
+  index: number;
+}
+
+function TestCaseRow({ testCase, result, index }: TestCaseRowProps) {
+  const [showOutput, setShowOutput] = useState(false);
+  
+  const actualOutput = result?.stdout || result?.stderr || "Sem saída";
+  const expectedOutput = testCase.expectedOutput || "Sem saída esperada";
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+  };
+
+  return (
+    <TableRow className="hover:bg-gray-50 transition-colors duration-200">
+      <TableCell className="font-medium">
+        <div className="flex items-center gap-2">
+          <Hash className="w-4 h-4 text-gray-400" />
+          <span>Teste {index + 1}</span>
+        </div>
+      </TableCell>
+      <TableCell>
+        <SubmissionStatusBadge status={(result?.status || 'pending') as SubmissionStatus} />
+      </TableCell>
+      <TableCell>
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowOutput(!showOutput)}
+              className="h-6 px-2 text-xs"
+            >
+              {showOutput ? (
+                <EyeOff className="w-3 h-3" />
+              ) : (
+                <Eye className="w-3 h-3" />
+              )}
+              {showOutput ? "Ocultar" : "Mostrar"}
+            </Button>
+            {actualOutput && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => copyToClipboard(actualOutput)}
+                className="h-6 px-2 text-xs"
+              >
+                <Copy className="w-3 h-3" />
+              </Button>
+            )}
+          </div>
+          {showOutput && (
+            <div className="bg-gray-900 rounded p-2 max-w-xs">
+              <pre className="text-xs text-gray-300 whitespace-pre-wrap overflow-auto max-h-20">
+                {actualOutput}
+              </pre>
+            </div>
+          )}
+        </div>
+      </TableCell>
+      <TableCell>
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => copyToClipboard(expectedOutput)}
+              className="h-6 px-2 text-xs"
+            >
+              <Copy className="w-3 h-3" />
+              Copiar
+            </Button>
+          </div>
+          <div className="bg-gray-900 rounded p-2 max-w-xs">
+            <pre className="text-xs text-gray-300 whitespace-pre-wrap overflow-auto max-h-20">
+              {expectedOutput}
+            </pre>
+          </div>
+        </div>
+      </TableCell>
+    </TableRow>
   );
 }

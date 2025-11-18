@@ -108,6 +108,32 @@ export const ClassesService = {
     });
     return response.data.data || response.data;
   },
+
+  // Buscar alunos de uma turma
+  getClassStudents: async (id: number): Promise<ClassStudent[]> => {
+    try {
+      const response = await api.get(`api/turmas/${id}`, {
+        headers: getAuthHeaders(),
+        withCredentials: true
+      });
+      
+      const classData = response.data.data || response.data;
+      const alunos = classData.alunos || [];
+      
+      // Mapear os dados da API para o formato esperado pelo componente
+      return alunos.map((aluno: any) => ({
+        id: aluno.id,
+        classId: classData.id,
+        studentId: aluno.id,
+        studentName: aluno.name,
+        studentEmail: aluno.email,
+        enrolledAt: aluno.created_at || new Date().toISOString()
+      }));
+    } catch (error) {
+      handleAuthError(error);
+      throw error;
+    }
+  },
 };
 
 export default ClassesService;

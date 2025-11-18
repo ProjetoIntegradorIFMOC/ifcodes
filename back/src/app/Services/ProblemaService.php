@@ -74,11 +74,12 @@ class ProblemaService
         return $this->_problema;
     }
 
-    public static function listarTodos($user_id = null)
+    public static function listarTodos($user_id = null, $filtrarPorCriador = false)
     {
         $query = Problema::with('casosTeste');
 
-        if ($user_id) {
+        // Apenas filtra por criador se explicitamente solicitado
+        if ($user_id && $filtrarPorCriador) {
             $query->where('created_by', $user_id);
         }
 
