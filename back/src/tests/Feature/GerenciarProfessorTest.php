@@ -34,6 +34,28 @@ class GerenciarProfessorTest extends TestCase
         return $admin;
     }
 
+    // Helper para criar um Professor completo (Usuário + Relação Professor)
+    private function createProfessor(string $name, string $email, string $area): User
+    {
+        // 1. Cria o registro de usuário
+        $user = User::factory()->create([
+            'name' => $name,
+            'email' => $email,
+        ]);
+        
+        // 2. Atribui o papel 'professor'
+        $user->assignRole('professor');
+
+        // 3. Cria o registro específico na tabela 'professor' (assumindo a chave estrangeira user_id)
+        Professor::create([
+            'user_id' => $user->id,
+            'area_atuacao' => $area,
+        ]);
+
+        return $user;
+    }
+
+    //--- suite 1 ---
     /**
      * @test
      * Caso 1.1: Criar professor com todos os dados válidos
@@ -41,9 +63,6 @@ class GerenciarProfessorTest extends TestCase
     public function admin_pode_criar_professor_com_dados_validos(): void
     {
         $this->createAndActAsAdmin();
-
-        // Opcional: habilita debug para ver exceções diretamente durante o desenvolvimento
-        $this->withoutExceptionHandling();
 
         $payload = [
             'name' => 'Douglas Sena',
@@ -53,26 +72,69 @@ class GerenciarProfessorTest extends TestCase
             'area_atuacao' => 'Ciência da Computação',
         ];
 
-        // Faz a requisição POST para a rota de API que cria professores
         $response = $this->postJson(route('professores.store'), $payload);
 
-        // Deve retornar 201 Created
-        $response->assertStatus(201);
+        $response->assertStatus(201)
+                 ->assertJsonFragment(['email' => 'douglassena@gmail.com']);
 
-        $response->assertJsonFragment(['email' => 'douglassena@gmail.com']);
-
-        // Verifica que o usuário foi criado
-        $this->assertDatabaseHas('users', [
-            'email' => 'douglassena@gmail.com',
-            'name' => 'Douglas Sena',
-        ]);
-
-        // Verifica que o registro na tabela 'professor' foi criado com a área correta
-        $this->assertDatabaseHas('professor', [
-            'area_atuacao' => 'Ciência da Computação',
-        ]);
-
-        $newUser = User::where('email', 'douglassena@gmail.com')->first();
-        $this->assertTrue($newUser->hasRole('professor'));
+        $this->assertDatabaseHas('users', ['email' => 'douglassena@gmail.com']);
+        $this->assertDatabaseHas('professor', ['area_atuacao' => 'Ciência da Computação']);
+        $this->assertTrue(User::where('email', 'douglassena@gmail.com')->first()->hasRole('professor'));
     }
+
+    //--- Novos Casos de Teste (Listagem e Edição) ---
+    
+    /**
+     * @test
+     * Caso 1.10: Listar Professores (Caminho Feliz - Professor Único)
+     * Requisito: Exibir nome, email, área e botões de ação.
+     */
+    public function admin_pode_visualizar_professor_unico_caminho_feliz(): void
+    {
+        $this->createAndActAsAdmin();
+
+        // Pré-condição específica:
+        $professor = $this->createProfessor('Rogerio Sena', 'rogeriosena@gmail.com', 'Ciência da Computação');
+
+        // Etapa de execução: Visualizar a lista
+        $response = $this->getJson(route('professores.index'));
+        
+        // Resultado Esperado:
+        $response->assertStatus(200)
+            ->assertJsonPath('meta.total', 1)
+            // Verificar nome, e-mail e área
+            ->assertJsonFragment([
+                'name' => 'Rogerio Sena', 
+                'email' => 'rogeriosena@gmail.com', 
+                'area_atuacao' => 'Ciência da Computação',
+            ])
+            // Verificar a estrutura das ações (links)
+            ->assertJsonPath('data.0.links', [
+                'edit' => route('professores.update', $professor->id),
+                'delete' => route('professores.destroy', $professor->id),
+            ]);
+    }
+
+    /**
+     * @test
+     * Caso 1.11: Listar Professores (Lista vazia)
+     * Requisito: Não exibir nenhum professor.
+     */
+    public function admin_pode_visualizar_lista_de_professores_vazia(): void
+    {
+        $this->createAndActAsAdmin();
+
+        // Pré-condição: Nenhum professor cadastrado (garantido pelo RefreshDatabase)
+        
+        // Etapa de execução: Visualizar a área de listagem
+        $response = $this->getJson(route('professores.index'));
+        
+        // Resultado esperado:
+        $response->assertStatus(200)
+                 // Verifica que o total é zero e que o array de dados está vazio
+                 ->assertJsonPath('meta.total', 0)
+                 ->assertJsonPath('data', []);
+    }
+
+    
 }
