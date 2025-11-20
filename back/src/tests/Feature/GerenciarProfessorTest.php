@@ -55,7 +55,7 @@ class GerenciarProfessorTest extends TestCase
         return $user;
     }
 
-    //--- suite 1 ---
+
     /**
      * @test
      * Caso 1.1: Criar professor com todos os dados válidos
@@ -82,8 +82,7 @@ class GerenciarProfessorTest extends TestCase
         $this->assertTrue(User::where('email', 'douglassena@gmail.com')->first()->hasRole('professor'));
     }
 
-    //--- Novos Casos de Teste (Listagem e Edição) ---
-    
+
     /**
      * @test
      * Caso 1.10: Listar Professores (Caminho Feliz - Professor Único)
@@ -136,5 +135,53 @@ class GerenciarProfessorTest extends TestCase
                  ->assertJsonPath('data', []);
     }
 
-    
+
+    /**
+     * @test
+     * Caso 1.12: Editar professor utilizando todos os dados válidos
+     */
+    public function admin_pode_editar_professor_com_dados_validos(): void
+    {
+        $this->createAndActAsAdmin();
+
+        // Pré-condição específica: Professor a ser editado
+        $professor = $this->createProfessor('Maria Aparecida', 'mariaaparecida@gmail.com', 'Ciência da Computação');
+        $old_user_id = $professor->id;
+
+        // Dados de teste (novos dados)
+        $novos_dados = [
+            'name' => 'Maria Aparecida Freitas',
+            'email' => 'mariaaparecidafreitas@gmail.com',
+            // A senha não é necessária no payload PUT, a menos que seja um campo obrigatório
+            // mas mantemos para seguir o cenário de CT se o Controller esperar:
+            'password' => 'mariaaf12345', 
+            'area_atuacao' => 'Ciência de Dados',
+        ];
+
+        // Etapas de Execução: Requisição PUT para atualização
+        $response = $this->putJson(route('professores.update', $professor->id), $novos_dados);
+
+        // Resultado esperado:
+        
+        // 1. Mensagem de sucesso (HTTP 200 OK)
+        $response->assertStatus(200)
+                 ->assertJsonFragment(['name' => 'Maria Aparecida Freitas']);
+
+        // 2. Novos dados persistidos no banco de dados (Verifica o User e o Professor)
+        $this->assertDatabaseHas('users', [
+            'id' => $old_user_id, // Garante que o mesmo ID foi atualizado
+            'name' => 'Maria Aparecida Freitas',
+            'email' => 'mariaaparecidafreitas@gmail.com',
+        ]);
+        
+        $this->assertDatabaseHas('professor', [
+            'user_id' => $old_user_id,
+            'area_atuacao' => 'Ciência de Dados',
+        ]);
+
+        // 3. Verifica que os dados antigos de email não existem mais (o email foi alterado)
+        $this->assertDatabaseMissing('users', [
+            'email' => 'mariaaparecida@gmail.com',
+        ]);
+    }
 }
