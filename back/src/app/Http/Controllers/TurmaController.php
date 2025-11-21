@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\TurmaRequest;
 use App\Http\Resources\TurmaResource;
+use App\Models\Aluno;
 use Illuminate\Support\Facades\DB;
 use App\Models\Turma;
 use App\Models\User;
@@ -122,5 +123,32 @@ class TurmaController extends Controller
         }
 
         return $query->paginate(10);
+    }
+
+    public function vincularAluno(int $turma_id, int $aluno_id)
+    {
+        $turma = Turma::find($turma_id);
+        if (!$turma) {
+            return response()->json('Turma não encontrada!', 404);
+        }
+
+        $aluno = Aluno::find($aluno_id);
+        if (!$aluno) {
+            return response()->json('Aluno não encontrado!', 404);
+        }
+
+        $turma->alunos()->syncWithoutDetaching([$aluno_id]);
+        return response()->json('Aluno vinculado com sucesso!', 200);
+    }
+
+    public function desvincularAluno(int $turma_id, int $aluno_id)
+    {
+        $turma = Turma::find($turma_id);
+        if (!$turma) {
+            return response()->json('Turma não encontrada!', 404);
+        }
+
+        $turma->alunos()->detach($aluno_id);
+        return response()->json('Aluno desvinculado com sucesso!', 200);
     }
 }
