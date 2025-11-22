@@ -134,6 +134,32 @@ export const ClassesService = {
       throw error;
     }
   },
+
+  // Adicionar aluno a uma turma
+  addStudentToClass: async (classId: number, data: AddStudentToClassDTO): Promise<void> => {
+    try {
+      await api.post(`api/turmas/${classId}/vincular-aluno/${data.studentId}`, {}, {
+        headers: getAuthHeaders(),
+        withCredentials: true
+      });
+    } catch (error) {
+      handleAuthError(error);
+      throw error;
+    }
+  },
+
+  // Remover aluno de uma turma
+  removeStudentFromClass: async (classId: number, studentId: number): Promise<void> => {
+    try {
+      await api.delete(`api/turmas/${classId}/desvincular-aluno/${studentId}`, {
+        headers: getAuthHeaders(),
+        withCredentials: true
+      });
+    } catch (error) {
+      handleAuthError(error);
+      throw error;
+    }
+  },
 };
 
 export default ClassesService;
