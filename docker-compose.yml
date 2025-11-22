@@ -8,43 +8,43 @@ x-logging:
 services:
 
   # --- SERVIÇOS DO JUDGE0 ---
-  judge0_server:
-    image: judge0/judge0:1.13.1
-    container_name: judge0_server
-    depends_on:
-      - postgres
-      - judge0_redis
-    volumes:
-      - ./judge0.conf:/judge0.conf:ro
-    ports:
-      - "2358:2358"
-    privileged: true
-    <<: *default-logging
-    restart: always
+  # judge0_server:
+  #   image: judge0/judge0:1.13.1
+  #   container_name: judge0_server
+  #   depends_on:
+  #     - postgres
+  #     - judge0_redis
+  #   volumes:
+  #     - ./judge0.conf:/judge0.conf:ro
+  #   ports:
+  #     - "2358:2358"
+  #   privileged: true
+  #   <<: *default-logging
+  #   restart: always
 
-  judge0_workers:
-    image: judge0/judge0:1.13.1
-    command: ["./scripts/workers"]
-    container_name: judge0_workers
-    depends_on:
-      - postgres
-      - judge0_redis
-    volumes:
-      - ./judge0.conf:/judge0.conf:ro
-    privileged: true
-    <<: *default-logging
-    restart: always
+  # judge0_workers:
+  #   image: judge0/judge0:1.13.1
+  #   command: ["./scripts/workers"]
+  #   container_name: judge0_workers
+  #   depends_on:
+  #     - postgres
+  #     - judge0_redis
+  #   volumes:
+  #     - ./judge0.conf:/judge0.conf:ro
+  #   privileged: true
+  #   <<: *default-logging
+  #   restart: always
 
-  judge0_redis:
-    image: redis:7.2.4
-    container_name: judge0_redis
-    command: [
-      "bash", "-c",
-      'docker-entrypoint.sh --appendonly no --requirepass "$$REDIS_PASSWORD"'
-    ]
-    env_file: judge0.conf
-    <<: *default-logging
-    restart: always
+  # judge0_redis:
+  #   image: redis:7.2.4
+  #   container_name: judge0_redis
+  #   command: [
+  #     "bash", "-c",
+  #     'docker-entrypoint.sh --appendonly no --requirepass "$$REDIS_PASSWORD"'
+  #   ]
+  #   env_file: judge0.conf
+  #   <<: *default-logging
+  #   restart: always
 
 # --- REDIS DO LARAVEL ---
   laravel_redis:
@@ -76,6 +76,9 @@ services:
     env_file: judge0.conf
     environment:
       - POSTGRES_DB_BACKEND=ifcodes
+      - POSTGRES_DB=ifcodes
+      - POSTGRES_USER=integrador
+      - POSTGRES_PASSWORD=325158
     volumes:
       - postgres_data:/var/lib/postgresql/data/
       - ./init-backend-db.sh:/docker-entrypoint-initdb.d/init-backend-db.sh
@@ -99,7 +102,6 @@ services:
     command: "php artisan serve --host=0.0.0.0 --port=8000"
     depends_on:
       - postgres
-      - judge0_server
       - laravel_redis
 
   # --- SERVIÇOS DO FRONTEND (REACT) ---
