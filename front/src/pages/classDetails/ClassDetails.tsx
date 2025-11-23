@@ -116,6 +116,7 @@ export default function ClassDetails() {
   const loadAllStudents = async () => {
     try {
       const data = await getAllStudents();
+      console.log("Alunos carregados do banco:", data);
       setAllStudents(data);
     } catch (error) {
       console.error("Erro ao carregar lista de alunos:", error);
