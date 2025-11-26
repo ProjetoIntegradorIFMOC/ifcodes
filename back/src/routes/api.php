@@ -31,6 +31,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/user/change-password', [AuthController::class, 'changePassword']);
 
     // Rotas de recursos da API
+
     Route::apiResource('atividades', AtividadeController::class);
     Route::apiResource('problemas', ProblemaController::class);
     Route::apiResource('professores', ProfessorController::class)
@@ -38,6 +39,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('alunos', AlunoController::class);
     Route::apiResource('turmas', TurmaController::class);
 
+
+    Route::get('/turmas/{turma_id}/listar-alunos', [TurmaController::class, 'listarAlunos']);
+    Route::post('/turmas/{turma_id}/vincular-aluno/{aluno_id}', [TurmaController::class, 'vincularAluno']);
+    Route::delete('/turmas/{turma_id}/desvincular-aluno/{aluno_id}', [TurmaController::class, 'desvincularAluno']);
+
+    // Rota para listar todas as submissões de uma atividade de uma turma (apenas professor/admin)
+    Route::get('/turmas/{turma_id}/atividades/{atividade_id}/submissoes', [SubmissaoController::class, 'getSubmissionsByActivity']);
+
+    Route::get('/submissoes/atividades/{atividade}', [SubmissaoController::class, 'getSubmissionByUser']);
     Route::apiResource('submissoes', SubmissaoController::class)
         ->except('update', 'destroy')
         ->parameters(['submissoes' => 'submissao']);

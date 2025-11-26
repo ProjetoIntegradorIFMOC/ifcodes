@@ -1,9 +1,34 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { Problem } from "../types";
-import { fakeProblems } from "../mocks";
 import axios from "axios";
 
 const API_URL = (import.meta as any).env?.VITE_API_URL || "http://localhost:8000";
+
+/**
+ * Extrai o texto puro de um enunciado em formato Draft.js (JSON)
+ * @param enunciado - String JSON do Draft.js ou texto puro
+ * @returns Texto extraído
+ */
+function extractTextFromDraftJs(enunciado: string): string {
+  try {
+    // Tenta fazer parse do JSON
+    const parsed = JSON.parse(enunciado);
+    
+    // Se for um objeto Draft.js, extrai o texto dos blocos
+    if (parsed.blocks && Array.isArray(parsed.blocks)) {
+      return parsed.blocks
+        .map((block: any) => block.text || '')
+        .filter((text: string) => text.trim() !== '')
+        .join('\n');
+    }
+    
+    // Se não for Draft.js, retorna o próprio valor parseado como string
+    return String(parsed);
+  } catch (error) {
+    // Se não for JSON válido, retorna o texto original
+    return enunciado;
+  }
+}
 
 /**
  * Simula uma chamada de API para buscar um problema pelo id.
@@ -24,7 +49,7 @@ export async function getProblemById(id: string): Promise<Problem | undefined> {
     return {
       id: problema.id,
       title: problema.titulo,
-      statement: problema.enunciado,
+      statement: extractTextFromDraftJs(problema.enunciado),
       timeLimitMs: problema.tempo_limite,
       memoryLimitKb: problema.memoria_limite,
       testCases: problema.casos_teste?.map((caso: any) => ({
@@ -55,7 +80,7 @@ export async function getAllProblems(): Promise<Problem[]> {
     return problemas.map((problema: any) => ({
       id: problema.id,
       title: problema.titulo,
-      statement: problema.enunciado,
+      statement: extractTextFromDraftJs(problema.enunciado),
       timeLimitMs: problema.tempo_limite,
       memoryLimitKb: problema.memoria_limite,
       testCases: problema.casos_teste?.map((caso: any) => ({
@@ -98,7 +123,7 @@ export async function createProblem(problemData: {
     return {
       id: problema.id,
       title: problema.titulo,
-      statement: problema.enunciado,
+      statement: extractTextFromDraftJs(problema.enunciado),
       timeLimitMs: problema.tempo_limite,
       memoryLimitKb: problema.memoria_limite,
     };
@@ -132,7 +157,7 @@ export async function updateProblem(id: number, problemData: {
     return {
       id: problema.id,
       title: problema.titulo,
-      statement: problema.enunciado,
+      statement: extractTextFromDraftJs(problema.enunciado),
       timeLimitMs: problema.tempo_limite,
       memoryLimitKb: problema.memoria_limite,
     };

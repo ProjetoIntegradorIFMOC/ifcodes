@@ -20,6 +20,7 @@ interface DataContextType {
   mapSubmissions: Map<number, Submission>;
   loading: boolean;
   updateSubmissions: () => Promise<void>;
+  updateActivities: () => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType>({
@@ -31,6 +32,7 @@ const DataContext = createContext<DataContextType>({
   mapSubmissions: new Map(),
   loading: false,
   updateSubmissions: async () => {},
+  updateActivities: async () => {},
 });
 
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
@@ -54,25 +56,40 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [submissions]);
 
   const updateSubmissions = async () => {
-    const submissions = await getAllSubmissions();
-    setSubmissions(submissions);
+    try {
+      const submissions = await getAllSubmissions();
+      setSubmissions(submissions);
+    } catch (error) {
+      console.error("DataContext: Erro ao atualizar submissões:", error);
+    }
+  };
+
+  const updateActivities = async () => {
+    try {
+      const activitiesData = await getAllActivities();
+      setActivities(activitiesData.items);
+    } catch (error) {
+      console.error("DataContext: Erro ao atualizar atividades:", error);
+    }
   };
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
+        
         const [activitiesData, problemsData, submissionsData] =
           await Promise.all([
             getAllActivities(),
             getAllProblems(),
             getAllSubmissions(),
           ]);
+        
         setActivities(activitiesData.items);
         setProblems(problemsData);
         setSubmissions(submissionsData);
       } catch (error) {
-        console.error("Failed to fetch data:", error);
+        console.error("DataContext: Falha ao buscar dados:", error);
       } finally {
         setLoading(false);
       }
@@ -80,6 +97,44 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
 
     fetchData();
   }, []);
+
+  // Polling para atualizar submissões pendentes/processando a cada 10 segundos
+  useEffect(() => {
+    const hasPendingSubmissions = submissions.some(
+      (s) => s.status === "pending" || s.status === "processing"
+    );
+
+    if (!hasPendingSubmissions) {
+      return;
+    }
+
+    const intervalId = setInterval(async () => {
+      await updateSubmissions();
+    }, 10000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [submissions]);
+
+  // Polling para atualizar atividades pendentes a cada 10 segundos
+  useEffect(() => {
+    const hasPendingActivities = activities.some(
+      (a: Activity) => a.status === "pending"
+    );
+
+    if (!hasPendingActivities) {
+      return;
+    }
+
+    const intervalId = setInterval(async () => {
+      await updateActivities();
+    }, 10000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [activities]);
 
   return (
     <DataContext.Provider
@@ -92,6 +147,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
         mapSubmissions,
         submissions,
         updateSubmissions,
+        updateActivities,
       }}
     >
       {children}

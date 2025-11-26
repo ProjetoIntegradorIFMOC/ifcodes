@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import type { Activity, Problem, Submission } from "@/types";
+import type { Submission } from "@/types";
 import {
   Table,
   TableBody,
@@ -8,8 +8,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/table";
-import { getAllSubmissions } from "@/services/SubmissionsService";
-import { getAllActivities } from "@/services/ActivitiesService";
 import { useNavigate } from "react-router";
 import {
   FileText,
@@ -22,29 +20,25 @@ import {
   Search,
   Filter,
   TrendingUp,
-  Award,
   Target,
   ArrowRight,
-  Loader2,
   RefreshCw,
-  Download,
-  BarChart3,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { getAllProblems } from "@/services/ProblemsServices";
 import { useData } from "@/context/DataContext";
+import Loading from "@/components/Loading";
 
 // Configuração dos possíveis status das submissões (cor, ícone, etc)
 const statusConfig = {
-  accepted: {
+  passed: {
     label: "Aceito",
     icon: CheckCircle2,
     className: "bg-green-100 text-green-800 border-green-200",
     dotColor: "bg-green-500",
   },
-  rejected: {
-    label: "Rejeitado",
+  failed: {
+    label: "Resposta Errada",
     icon: XCircle,
     className: "bg-red-100 text-red-800 border-red-200",
     dotColor: "bg-red-500",
@@ -55,8 +49,8 @@ const statusConfig = {
     className: "bg-yellow-100 text-yellow-800 border-yellow-200",
     dotColor: "bg-yellow-500",
   },
-  running: {
-    label: "Executando",
+  processing: {
+    label: "Processando",
     icon: PlayCircle,
     className: "bg-blue-100 text-blue-800 border-blue-200",
     dotColor: "bg-blue-500",
@@ -66,6 +60,30 @@ const statusConfig = {
     icon: AlertCircle,
     className: "bg-orange-100 text-orange-800 border-orange-200",
     dotColor: "bg-orange-500",
+  },
+  timeout: {
+    label: "Tempo Limite",
+    icon: Clock,
+    className: "bg-purple-100 text-purple-800 border-purple-200",
+    dotColor: "bg-purple-500",
+  },
+  "runtime-error": {
+    label: "Erro de Execução",
+    icon: AlertCircle,
+    className: "bg-pink-100 text-pink-800 border-pink-200",
+    dotColor: "bg-pink-500",
+  },
+  "internal-error": {
+    label: "Erro Interno",
+    icon: AlertCircle,
+    className: "bg-gray-100 text-gray-800 border-gray-200",
+    dotColor: "bg-gray-500",
+  },
+  unknown: {
+    label: "Desconhecido",
+    icon: AlertCircle,
+    className: "bg-gray-100 text-gray-800 border-gray-200",
+    dotColor: "bg-gray-500",
   },
 } as const;
 
@@ -89,41 +107,7 @@ function StatusBadge({ status }: StatusBadgeProps) {
   );
 }
 
-// Formata a data de envio e retorna string relativa (ex: "2h atrás")
-function formatDate(dateString: string) {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffTime = now.getTime() - date.getTime();
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-  const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
-  const diffMinutes = Math.floor(diffTime / (1000 * 60));
-
-  const formatted = date.toLocaleString("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-
-  let relative = "";
-
-  if (diffMinutes < 1) {
-    relative = "Agora mesmo";
-  } else if (diffMinutes < 60) {
-    relative = `${diffMinutes}min atrás`;
-  } else if (diffHours < 24) {
-    relative = `${diffHours}h atrás`;
-  } else if (diffDays === 1) {
-    relative = "Ontem";
-  } else if (diffDays < 7) {
-    relative = `${diffDays} dias atrás`;
-  } else {
-    relative = `${Math.floor(diffDays / 7)} semanas atrás`;
-  }
-
-  return { formatted, relative };
-}
+// note: relative formatting removed from this file; table shows only date
 
 // Skeleton de loading exibido enquanto os dados são carregados
 function LoadingSkeleton() {
@@ -180,18 +164,29 @@ function StatsCard({
 export default function Submissions() {
   const navigate = useNavigate();
 
-  const { mapActivities, mapProblems, loading, submissions } = useData();
+  const { loading, submissions, updateSubmissions } = useData();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Força atualização quando a página é montada
+  useEffect(() => {
+    updateSubmissions();
+  }, []);
 
   // Calcula estatísticas rápidas sobre as submissões
   const stats = useMemo(() => {
     const total = submissions.length;
-    const accepted = submissions.filter((s) => s.status === "accepted").length;
-    const rejected = submissions.filter((s) => s.status === "rejected").length;
+    const accepted = submissions.filter((s) => s.status === "passed").length;
+    const rejected = submissions.filter((s) => 
+      s.status === "failed" || 
+      s.status === "compile-error" || 
+      s.status === "timeout" || 
+      s.status === "runtime-error"
+    ).length;
     const pending = submissions.filter(
-      (s) => s.status === "pending" || s.status === "running"
+      (s) => s.status === "pending" || s.status === "processing"
     ).length;
     const acceptanceRate = total > 0 ? Math.round((accepted / total) * 100) : 0;
 
@@ -200,26 +195,23 @@ export default function Submissions() {
 
   // Redireciona para o detalhe da submissão ao clicar na linha da tabela
   function redirectToSubmission(submission: Submission) {
-    console.log("Redirecting to submission:", submission);
     navigate(`/submissions/${submission.activityId}/${submission.id}`);
   }
 
   // Atualiza os dados ao clicar em "Atualizar"
   async function refreshData() {
-    // setLoading(true);
-    // try {
-    //   await Promise.all([fetchSubmissions()]);
-    // } finally {
-    //   setLoading(false);
-    // }
+    setRefreshing(true);
+    try {
+      await updateSubmissions();
+    } finally {
+      setRefreshing(false);
+    }
   }
 
   // Filtra submissões pelo termo de busca e filtro de status
   const filteredSubmissions = submissions.filter((submission) => {
-    const activity = mapActivities.get(submission.activityId);
-    const problem = activity ? mapProblems.get(activity?.problemId) : undefined;
-    const activityTitle = problem?.title || "";
-    const matchesSearch = activityTitle
+    const problemTitle = submission.problemTitle || "";
+    const matchesSearch = problemTitle
       .toLowerCase()
       .includes(searchTerm.toLowerCase());
     const matchesStatus =
@@ -257,10 +249,10 @@ export default function Submissions() {
             variant="outline"
             size="sm"
             onClick={refreshData}
-            disabled={loading}
+            disabled={loading || refreshing}
           >
             <RefreshCw
-              className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`}
+              className={`w-4 h-4 mr-2 ${(loading || refreshing) ? "animate-spin" : ""}`}
             />
             Atualizar
           </Button>
@@ -307,7 +299,7 @@ export default function Submissions() {
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
           <Input
             type="text"
-            placeholder="Buscar por atividade..."
+            placeholder="Buscar por problema..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white"
@@ -336,7 +328,7 @@ export default function Submissions() {
       <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
         {loading ? (
           <div className="p-6">
-            <LoadingSkeleton />
+            <Loading />
           </div>
         ) : sortedSubmissions.length === 0 ? (
           <div className="text-center py-12">
@@ -359,7 +351,7 @@ export default function Submissions() {
                 <TableHead className="font-semibold text-gray-900">
                   <div className="flex items-center gap-2">
                     <Target className="w-4 h-4" />
-                    Atividade
+                    Problema
                   </div>
                 </TableHead>
                 <TableHead className="font-semibold text-gray-900">
@@ -368,18 +360,25 @@ export default function Submissions() {
                     Data de Submissão
                   </div>
                 </TableHead>
-
+                <TableHead className="font-semibold text-gray-900">
+                  Status
+                </TableHead>
                 <TableHead className="w-12"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {sortedSubmissions.map((submission) => {
-                const dateInfo = formatDate(submission.dateSubmitted);
-                const activity = mapActivities.get(submission.activityId);
-                const problem = activity
-                  ? mapProblems.get(activity.problemId)
-                  : undefined;
-                const activityTitle = problem?.title || "";
+                // mostra apenas a data (sem horário) na tabela principal
+                const formattedDateOnly = new Date(
+                  submission.dateSubmitted
+                ).toLocaleDateString("pt-BR", {
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric",
+                });
+                
+                // Usa o título do problema que vem do backend
+                const problemTitle = submission.problemTitle || "Problema não encontrado";
 
                 return (
                   <TableRow
@@ -390,26 +389,23 @@ export default function Submissions() {
                     <TableCell className="font-medium">
                       <div className="flex flex-col">
                         <span className="text-gray-900 group-hover:text-purple-600 transition-colors">
-                          {activityTitle || "Atividade não encontrada"}
+                          {problemTitle}
                         </span>
-                        {!activityTitle && (
-                          <span className="text-xs text-red-500 mt-1">
-                            ID: {submission.id}
-                          </span>
-                        )}
+                        <span className="text-xs text-purple-600 mt-1">
+                          Atividade ID: {submission.activityId} - Submissão ID: {submission.id}
+                        </span>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col">
                         <span className="text-gray-900 font-medium">
-                          {dateInfo.formatted}
-                        </span>
-                        <span className="text-xs text-gray-500">
-                          {dateInfo.relative}
+                          {formattedDateOnly}
                         </span>
                       </div>
                     </TableCell>
-
+                    <TableCell>
+                      <StatusBadge status={submission.status as keyof typeof statusConfig} />
+                    </TableCell>
                     <TableCell>
                       <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-purple-600 transition-colors" />
                     </TableCell>

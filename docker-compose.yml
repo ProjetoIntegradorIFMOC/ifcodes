@@ -46,6 +46,29 @@ services:
     <<: *default-logging
     restart: always
 
+# --- REDIS DO LARAVEL ---
+  laravel_redis:
+    image: redis:7.2.4
+    container_name: laravel_redis
+    command: ["redis-server", "--appendonly", "no"]
+    <<: *default-logging
+    restart: always
+
+  queue_worker:
+    build:
+      context: ./back
+      dockerfile: src/docker/php/Dockerfile
+    container_name: laravel_queue
+    working_dir: /var/www/html
+    command: php artisan queue:work redis --queue=default --sleep=3 --tries=3
+    depends_on:
+      - backend_app
+      - laravel_redis
+    restart: unless-stopped
+    volumes:
+      - ./back/src/:/var/www/html:z
+      - /var/www/html/vendor
+
   # --- SERVIÇOS DO BANCO DE DADOS DO BACKEND E JUDGE0 ---
   postgres:
     image: postgres:16.2
@@ -60,41 +83,41 @@ services:
     restart: always
     ports:
       - "5432:5432"
-
   # --- SERVIÇOS DO BACKEND (LARAVEL) ---
-#  backend_app:
-#    build:
-#      context: ./back
-#      dockerfile: src/docker/php/Dockerfile
-#    container_name: laravel_app
-#    restart: unless-stopped
-#    working_dir: /var/www/html
-#    volumes:
-#      - ./back/src/:/var/www/html:z
-#      - /var/www/html/vendor
-#    ports:
-#      - "8000:8000"
-#    command: "php artisan serve --host=0.0.0.0 --port=8000"
-#    depends_on:
-#      - postgres
-#      - judge0_server
-#
-#  # --- SERVIÇOS DO FRONTEND (REACT) ---
-#  frontend_app:
-#    build:
-#      context: ./front
-#      dockerfile: Dockerfile
-#    container_name: react_app
-#    restart: unless-stopped
-#    volumes:
-#      - ./front:/app
-#      - /app/node_modules
-#    ports:
-#      - "5173:5173"
-#    environment:
-#      - CHOKIDAR_USEPOLLING=true
-#    depends_on:
-#      - backend_app
+  backend_app:
+    build:
+      context: ./back
+      dockerfile: src/docker/php/Dockerfile
+    container_name: laravel_app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./back/src/:/var/www/html:z
+      - /var/www/html/vendor
+    ports:
+      - "8000:8000"
+    command: "php artisan serve --host=0.0.0.0 --port=8000"
+    depends_on:
+      - postgres
+      - judge0_server
+      - laravel_redis
+
+  # --- SERVIÇOS DO FRONTEND (REACT) ---
+  frontend_app:
+    build:
+      context: ./front
+      dockerfile: Dockerfile
+    container_name: react_app
+    restart: unless-stopped
+    volumes:
+      - ./front:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    depends_on:
+      - backend_app
 
 volumes:
   postgres_data:
