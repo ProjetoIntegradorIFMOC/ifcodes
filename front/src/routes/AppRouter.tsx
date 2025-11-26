@@ -15,6 +15,7 @@ import SubmissionsDetails from "@/pages/submissionsDetails/SubmissionsDetails";
 import Problems from "@/pages/problems/Problems";
 import RequireAuth from "@/pages/RequireAuth";
 import RequireRole from "@/pages/RequireRole";
+import ProfileView from "@/pages/perfil/ProfileView";
 import { BrowserRouter, Route, Routes } from "react-router";
 
 export default function AppRouter() {
