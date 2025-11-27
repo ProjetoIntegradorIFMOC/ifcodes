@@ -3,7 +3,7 @@ import { useState } from "react";
 import showIcon from "@/assets/icons/password-show.svg";
 import hideIcon from "@/assets/icons/password-hide.svg";
 import ifCodes from "@/assets/icons/if-codes.png";
-import { useNavigate } from "react-router";
+import { useNavigate, Link } from "react-router";
 import { useUser } from "@/context/UserContext";
 import axios from "axios";
 import Notification from "@/components/Notification";
@@ -68,7 +68,11 @@ export default function Login() {
                 roles: roles
             });
             
-            navigate("/home");
+            if (userRes.data.must_change_password) {
+                navigate("/change-password");
+            } else {
+                navigate("/home");
+            }
         } catch (error) {
             if (axios.isAxiosError(error) && error.response?.status === 422) {
                 setError("Email ou Senha inválidos");
@@ -140,7 +144,7 @@ export default function Login() {
                         )}
                     </div>
                     <div className="mb-4 text-right">
-                        <a href="#" className="text-sm text-purple-600 hover:underline">Esqueceu sua senha?</a>
+                        <Link to="/forgot-password" className="text-sm text-purple-600 hover:underline">Esqueceu sua senha?</Link>
                     </div>
                     <button type="submit" className="w-full
                         bg-gradient-to-r from-purple-600 to-pink-600

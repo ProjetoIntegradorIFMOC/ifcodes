@@ -4,6 +4,7 @@ import ActivitiesDetails from "@/pages/activitiesDetails/ActivitiesDetails";
 import AppLayout from "@/pages/AppLayout";
 import Home from "@/pages/home/Home";
 import Login from "@/pages/login/Login";
+import ForgotPassword from "@/pages/forgotPassword/ForgotPassword";
 import ChangePassword from "@/pages/changePassword/ChangePassword";
 import Unauthorized from "@/pages/Unauthorized";
 import Submissions from "@/pages/submissions/Submissions";
@@ -22,6 +23,7 @@ export default function AppRouter() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/unauthorized" element={<Unauthorized />} />
         <Route element={<RequireAuth />}>
           <Route path="/" element={<AppLayout />}>
