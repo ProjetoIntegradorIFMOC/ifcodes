@@ -43,7 +43,7 @@ class ForgotPasswordTempController extends Controller
 
         // Update the user's password and mark that they must change it at next login
         $user->update([
-            'password' => Hash::make($tempPassword),
+            'password' => $tempPassword,
 
             'must_change_password' => true
         ]);
