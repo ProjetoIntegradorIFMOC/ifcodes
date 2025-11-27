@@ -10,6 +10,7 @@ services:
   # --- SERVIÇOS DO JUDGE0 ---
   judge0_server:
     image: judge0/judge0:1.13.1
+    platform: linux/amd64
     container_name: judge0_server
     depends_on:
       - postgres
@@ -24,6 +25,7 @@ services:
 
   judge0_workers:
     image: judge0/judge0:1.13.1
+    platform: linux/amd64
     command: ["./scripts/workers"]
     container_name: judge0_workers
     depends_on:
@@ -83,6 +85,7 @@ services:
     restart: always
     ports:
       - "5432:5432"
+
   # --- SERVIÇOS DO BACKEND (LARAVEL) ---
   backend_app:
     build:
