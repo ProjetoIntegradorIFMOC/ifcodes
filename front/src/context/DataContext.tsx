@@ -10,6 +10,7 @@ import type { Activity, Problem, Submission } from "@/types";
 import { getAllActivities } from "@/services/ActivitiesService";
 import { getAllProblems } from "@/services/ProblemsServices";
 import { getAllSubmissions } from "@/services/SubmissionsService";
+import { useUser } from "./UserContext";
 
 interface DataContextType {
   activities: Activity[];
@@ -38,6 +39,7 @@ const DataContext = createContext<DataContextType>({
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
+  const { user, loading: userLoading } = useUser();
   const [activities, setActivities] = useState<Activity[]>([]);
   const [problems, setProblems] = useState<Problem[]>([]);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
@@ -75,6 +77,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
 
   useEffect(() => {
     const fetchData = async () => {
+      if (userLoading) return;
+      
+      if (!user) {
+        setActivities([]);
+        setProblems([]);
+        setSubmissions([]);
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
         
@@ -96,7 +108,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
     };
 
     fetchData();
-  }, []);
+  }, [user, userLoading]);
 
   // Polling para atualizar submissões pendentes/processando a cada 10 segundos
   useEffect(() => {
