@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Http;
 class Judge0ApiService
 {
     protected PendingRequest $client;
+    private const LINGUAGEM_C = 50;
 
     public function __construct()
     {
@@ -40,7 +41,7 @@ class Judge0ApiService
         foreach ($submissao->atividade->problema->casosTeste as $caso) {
             $data['submissions'][] = [
                 'source_code' => $submissao->codigo,
-                'language_id' => 50,
+                'language_id' => self::LINGUAGEM_C,
                 'stdin' => $caso->entrada,
                 'expected_output' => $caso->saida,
                 'cpu_time_limit' => $submissao->atividade->problema->tempo_limite / 1000,
@@ -100,5 +101,21 @@ class Judge0ApiService
         $response->throw();
 
         return $response['status'];
+    }
+
+    /**
+    * Busca os detalhes completos de uma submissão com base no token
+    * Retorna status, stdout, stderr, compile_output, etc (todos em base64)
+    *
+    * @param string $token
+    * @return array
+    * @throws RequestException
+    */
+    public function getSubmissionFull(string $token){
+        $url = '/submissions/' . $token . '?base64_encoded=true&fields=status,stdout,stderr,compile_output,message';
+        $response = $this->client->get($url);
+        $response->throw();
+
+        return $response->json();
     }
 }

@@ -108,6 +108,58 @@ export const ClassesService = {
     });
     return response.data.data || response.data;
   },
+
+  // Buscar alunos de uma turma
+  getClassStudents: async (id: number): Promise<ClassStudent[]> => {
+    try {
+      const response = await api.get(`api/turmas/${id}`, {
+        headers: getAuthHeaders(),
+        withCredentials: true
+      });
+      
+      const classData = response.data.data || response.data;
+      const alunos = classData.alunos || [];
+      
+      // Mapear os dados da API para o formato esperado pelo componente
+      return alunos.map((aluno: any) => ({
+        id: aluno.id,
+        classId: classData.id,
+        studentId: aluno.id,
+        studentName: aluno.name,
+        studentEmail: aluno.email,
+        enrolledAt: aluno.created_at || new Date().toISOString()
+      }));
+    } catch (error) {
+      handleAuthError(error);
+      throw error;
+    }
+  },
+
+  // Adicionar aluno a uma turma
+  addStudentToClass: async (classId: number, data: AddStudentToClassDTO): Promise<void> => {
+    try {
+      await api.post(`api/turmas/${classId}/vincular-aluno/${data.studentId}`, {}, {
+        headers: getAuthHeaders(),
+        withCredentials: true
+      });
+    } catch (error) {
+      handleAuthError(error);
+      throw error;
+    }
+  },
+
+  // Remover aluno de uma turma
+  removeStudentFromClass: async (classId: number, studentId: number): Promise<void> => {
+    try {
+      await api.delete(`api/turmas/${classId}/desvincular-aluno/${studentId}`, {
+        headers: getAuthHeaders(),
+        withCredentials: true
+      });
+    } catch (error) {
+      handleAuthError(error);
+      throw error;
+    }
+  },
 };
 
 export default ClassesService;

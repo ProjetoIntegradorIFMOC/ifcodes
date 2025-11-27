@@ -20,9 +20,12 @@ import {
   Search,
   Filter,
   ArrowRight,
+  RefreshCw,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { getAllProblems } from "@/services/ProblemsServices";
 import { useData } from "@/context/DataContext";
+import Loading from "@/components/Loading";
 
 // Configuração dos possíveis status de atividades para exibição e estilização
 const statusConfig = {
@@ -123,10 +126,25 @@ function LoadingSkeleton() {
 export default function Activities() {
   const navigate = useNavigate();
 
-  const { activities, mapActivities, mapProblems, loading } = useData();
+  const { activities, mapActivities, mapProblems, loading, updateActivities } = useData();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    updateActivities();
+  }, []);
+
+  // Atualiza os dados ao clicar em "Atualizar"
+  async function refreshData() {
+    setRefreshing(true);
+    try {
+      await updateActivities();
+    } finally {
+      setRefreshing(false);
+    }
+  }
 
   // Redireciona para o detalhe da atividade ao clicar na linha
   function redirectToActivity(activity: Activity) {
@@ -136,12 +154,13 @@ export default function Activities() {
 
   // Filtra atividades conforme o texto pesquisado e o filtro de status
   const filteredActivities = activities.filter((activity) => {
-    const matchesSearch = activity.title
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase());
-    const matchesStatus =
-      statusFilter === "all" || activity.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    // const matchesSearch = activity.title
+    //   .toLowerCase()
+    //   .includes(searchTerm.toLowerCase());
+    // const matchesStatus =
+    //   statusFilter === "all" || activity.status === statusFilter;
+    // return matchesSearch && matchesStatus;
+    return true;
   });
 
   // Obtém os status únicos presentes nas atividades para montar os filtros
@@ -162,9 +181,22 @@ export default function Activities() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 text-sm text-gray-500">
-          <Calendar className="w-4 h-4" />
-          {activities.length} atividade{activities.length !== 1 ? "s" : ""}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 text-sm text-gray-500">
+            <Calendar className="w-4 h-4" />
+            {activities.length} atividade{activities.length !== 1 ? "s" : ""}
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={refreshData}
+            disabled={loading || refreshing}
+          >
+            <RefreshCw
+              className={`w-4 h-4 mr-2 ${(loading || refreshing) ? "animate-spin" : ""}`}
+            />
+            Atualizar
+          </Button>
         </div>
       </div>
 
@@ -203,7 +235,7 @@ export default function Activities() {
       <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
         {loading ? (
           <div className="p-6">
-            <LoadingSkeleton />
+            <Loading />
           </div>
         ) : filteredActivities.length === 0 ? (
           <div className="text-center py-12">
@@ -223,12 +255,12 @@ export default function Activities() {
           <Table>
             <TableHeader>
               <TableRow className="bg-gray-50 hover:bg-gray-50">
-                <TableHead className="font-semibold text-gray-900">
+                {/* <TableHead className="font-semibold text-gray-900">
                   <div className="flex items-center gap-2">
                     <FileText className="w-4 h-4" />
                     Título
                   </div>
-                </TableHead>
+                </TableHead> */}
                 <TableHead className="font-semibold text-gray-900">
                   <div className="flex items-center gap-2">
                     <Calendar className="w-4 h-4" />
@@ -253,7 +285,7 @@ export default function Activities() {
                     onClick={() => redirectToActivity(activity)}
                     className="cursor-pointer hover:bg-blue-50 transition-colors duration-200 group"
                   >
-                    <TableCell className="font-medium">
+                    {/* <TableCell className="font-medium">
                       <div className="flex flex-col">
                         <span className="text-gray-900 group-hover:text-blue-600 transition-colors">
                           {mapProblems.get(activity.problemId)?.title}
@@ -264,7 +296,7 @@ export default function Activities() {
                           </span>
                         )}
                       </div>
-                    </TableCell>
+                    </TableCell> */}
                     <TableCell>
                       <div className="flex flex-col">
                         <span className="text-gray-900 font-medium">

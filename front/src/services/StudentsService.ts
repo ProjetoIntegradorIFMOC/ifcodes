@@ -32,9 +32,23 @@ export async function getAllStudents(): Promise<Student[]> {
       headers: getAuthHeaders(),
       withCredentials: true,
     });
-    // A API retorna os dados dentro de response.data.data
-    return response.data.data || [];
+    // A API retorna dados paginados com a estrutura: { data: [...] }
+    // Como AlunoResource::collection($alunos) é usado, os dados estão em response.data.data
+    console.log('Response from API:', response.data);
+    
+    // Verifica se é uma resposta paginada
+    if (response.data.data && Array.isArray(response.data.data)) {
+      return response.data.data;
+    }
+    
+    // Fallback para resposta não paginada
+    if (Array.isArray(response.data)) {
+      return response.data;
+    }
+    
+    return [];
   } catch (error) {
+    console.error("Erro ao buscar alunos:", error);
     handleAuthError(error);
     return [];
   }

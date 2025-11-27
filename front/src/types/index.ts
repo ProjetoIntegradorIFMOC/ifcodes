@@ -1,15 +1,20 @@
 export type ActivityStatus = "completed" | "pending" | "overdue";
 export type SubmissionStatus =
-  | "approved"
-  | "partial"
+  | "passed"
   | "failed"
-  | "compile-error";
+  | "pending"
+  | "processing"
+  | "compile-error"
+  | "timeout"
+  | "runtime-error"
+  | "internal-error"
+  | "unknown";
 export type Language = "c" | "cpp" | "java" | "python";
 
 export type Activity = {
   id: number;
   problemId: number;
-  title: string;
+  // title: string;
   dueDate: string; // ISO date string
   status: ActivityStatus;
 };
@@ -29,6 +34,7 @@ export type Submission = {
   dateSubmitted: string; // ISO date string
   language: Language;
   status: SubmissionStatus;
+  problemTitle?: string | null;
 };
 
 export type Evaluation = {
@@ -50,6 +56,8 @@ export type TestCaseResult = {
   testCaseId: number;
   submissionId: number;
   status: string;
+  stdout?: string | null;
+  stderr?: string | null;
 };
 
 export type SubmissionReport = {

@@ -19,11 +19,15 @@ class CorrecaoController extends Controller
 
         foreach($correcoes as $correcao){
             $token = $correcao['token'];
-            $status = Judge0::getStatus($token);
-            $id = $status['id'];
+            $resultado = Judge0::getSubmissionFull($token);
+            $id = $resultado['status']['id'];
 
             DB::update("update correcao set status_correcao_id = $id where token = '$token'");
             $correcao['status'] = Status::get($id)['nome'];
+            
+            $correcao['stdout'] = isset($resultado['stdout']) ? base64_decode($resultado['stdout']) : null;
+            $correcao['stderr'] = isset($resultado['stderr']) ? base64_decode($resultado['stderr']) : null;
+            
             unset($correcao['token']);
         }
 
