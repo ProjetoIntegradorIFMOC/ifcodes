@@ -78,4 +78,21 @@ class AuthController extends Controller
             'message' => 'Senha alterada com sucesso. Por favor, faça login novamente.'
         ], 200);
     }
+
+    public function update(Request $request)
+    {
+        $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+        ]);
+
+        $user = $request->user();
+        $user->name = $request->input('name');
+        $user->save();
+
+        return response()->json([
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+        ], 200);
+    }
 }

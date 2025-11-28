@@ -1,47 +1,21 @@
-// Descomentar essa linha quando não for mais simulação
-// import { useUser } from "@/context/UserContext";
+import { useUser } from "@/context/UserContext";
 import type { User } from "@/types";
 import { User as UserIcon, Mail, Zap, Loader2, Key } from "lucide-react";
-// Remover essa linha quando não for mais simulação
-import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-
-// --- Simulação de Usuário (Remover posteriormente) ---
-const mockUser: User = {
-  id: 12345,
-  name: "João Silva",
-  email: "joao.silva@exemplo.com",
-  roles: ["Administrador"],
-};
-
-function useUser() {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      // Simula sucesso
-      setUser(mockUser);
-      setLoading(false);
-
-      // Para simular erro, comente as duas linhas acima e descomente as duas abaixo
-      // setUser(null);
-      // setLoading(false);
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, []);
-
-  return { user, loading };
-}
-// --- Fim da Simulação ---
+import { useState } from "react";
+import { updateName } from "@/services/ProfileService";
+import Notification from "@/components/Notification";
 
 /**
  * Componente Principal: ProfileView
  * Orquestra os estados de loading, erro e sucesso.
  */
 export default function ProfileView() {
-  // A chamada ao useUser agora funciona com a simulação local, remover essa linha posteriormente
-  const { user, loading } = useUser();
+  const { user, loading, setUser } = useUser();
+  const [notification, setNotification] = useState<
+    | { type: "success" | "error" | "warning"; message: string }
+    | null
+  >(null);
   const navigate = useNavigate();
 
   // 1. Estado de Carregamento
@@ -56,15 +30,19 @@ export default function ProfileView() {
 
   // 3. Estado de Sucesso
   return (
-    <div className="container mx-auto p-4 md:p-8 min-h-screen bg-gray-50">
+    <div className="container mx-auto p-4 md:p-8 min-h-screen">
       <div className="max-w-3xl mx-auto bg-white shadow-2xl rounded-2xl p-6 md:p-10 border border-gray-100">
         
-        <ProfileHeader user={user} />
+        <ProfileHeader user={user} setUser={setUser} setNotification={setNotification} />
+        {notification && (
+          <Notification
+            type={notification.type}
+            message={notification.message}
+            onClose={() => setNotification(null)}
+          />
+        )}
 
-        <SecuritySettings
-          user={user}
-          onChangePasswordClick={() => navigate("/change-password")}
-        />
+        <SecuritySettings onChangePasswordClick={() => navigate("/change-password")} />
 
       </div>
     </div>
@@ -119,25 +97,91 @@ function ErrorState({ onNavigateLogin }: ErrorStateProps) {
  */
 interface ProfileHeaderProps {
   user: User;
+  setUser: (user: User | null) => void;
+  setNotification: (
+    value: { type: "success" | "error" | "warning"; message: string } | null
+  ) => void;
 }
 
-function ProfileHeader({ user }: ProfileHeaderProps) {
+function ProfileHeader({ user, setUser, setNotification }: ProfileHeaderProps) {
+  const [editing, setEditing] = useState(false);
+  const [name, setNameState] = useState(user.name || "");
+  const [saving, setSaving] = useState(false);
+
+  const displayName = editing ? name : user.name || `Usuário #${user.id}`;
+
+  async function onSave() {
+    const token = localStorage.getItem("auth_token") || "";
+    try {
+      setSaving(true);
+      const data = await updateName(name, token);
+      setUser({ ...user, name: data.name });
+      setEditing(false);
+      setNotification &&
+        setNotification({ type: "success", message: "Nome atualizado com sucesso." });
+    } catch (err: any) {
+      console.error("Failed to update name", err);
+      const msg = err?.response?.data?.message || "Erro ao atualizar o nome do utilizador.";
+      setNotification && setNotification({ type: "error", message: msg });
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <div className="flex flex-col sm:flex-row items-center sm:items-start space-y-6 sm:space-y-0 sm:space-x-8 border-b pb-6 mb-8">
       {/* Imagem/Avatar */}
       <div className="w-24 h-24 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-4xl font-extrabold shadow-xl ring-4 ring-purple-100">
-        {user.name ? (
-          user.name[0].toUpperCase()
-        ) : (
-          <UserIcon className="w-10 h-10" />
-        )}
+        {displayName ? displayName[0].toUpperCase() : <UserIcon className="w-10 h-10" />}
       </div>
 
       {/* Informações Básicas e Status */}
-      <div className="text-center sm:text-left">
-        <h1 className="text-3xl font-extrabold text-gray-900 leading-tight">
-          {user.name || `Usuário #${user.id}`}
-        </h1>
+      <div className="text-center sm:text-left w-full">
+        <div className="flex items-center justify-center sm:justify-start gap-3">
+          {editing ? (
+            <input
+              className="text-3xl font-extrabold text-gray-900 leading-tight border-b px-2 py-1"
+              value={name}
+              onChange={(e) => setNameState(e.target.value)}
+            />
+          ) : (
+            <h1 className="text-3xl font-extrabold text-gray-900 leading-tight">
+              {displayName}
+            </h1>
+          )}
+
+          {!editing ? (
+            <button
+              type="button"
+              onClick={() => setEditing(true)}
+              className="ml-2 px-3 py-1 text-sm font-medium rounded-md bg-purple-600 text-white"
+            >
+              Editar
+            </button>
+          ) : (
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={onSave}
+                disabled={saving}
+                className="px-3 py-1 text-sm font-medium rounded-md bg-green-600 text-white"
+              >
+                {saving ? "A gravar..." : "Guardar"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditing(false);
+                  setNameState(user.name || "");
+                }}
+                className="px-3 py-1 text-sm font-medium rounded-md bg-gray-200"
+              >
+                Cancelar
+              </button>
+            </div>
+          )}
+        </div>
+
         <p className="flex items-center justify-center sm:justify-start text-lg text-gray-600 mt-1">
           <Mail className="w-4 h-4 mr-2 text-purple-600" /> {user.email}
         </p>
@@ -164,11 +208,10 @@ function ProfileHeader({ user }: ProfileHeaderProps) {
  * Exibe as ações de segurança (como alterar senha) e informações técnicas.
  */
 interface SecuritySettingsProps {
-  user: User;
   onChangePasswordClick: () => void;
 }
 
-function SecuritySettings({ user, onChangePasswordClick }: SecuritySettingsProps) {
+function SecuritySettings({ onChangePasswordClick }: SecuritySettingsProps) {
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold text-gray-800 border-b pb-2 mb-4">
@@ -194,18 +237,6 @@ function SecuritySettings({ user, onChangePasswordClick }: SecuritySettingsProps
         >
           Mudar
         </button>
-      </div>
-
-      {/* Detalhes Técnicos */}
-      <div className="pt-4 border-t">
-        <h3 className="text-lg font-semibold text-gray-700 mb-3">
-          Informação Técnica
-        </h3>
-        <div className="space-y-1 text-sm text-gray-600">
-          <p>
-            <strong>ID Interno:</strong> {user.id}
-          </p>
-        </div>
       </div>
     </div>
   );
