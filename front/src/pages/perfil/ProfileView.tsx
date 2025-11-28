@@ -31,7 +31,7 @@ export default function ProfileView() {
   // 3. Estado de Sucesso
   return (
     <div className="container mx-auto p-4 md:p-8 min-h-screen">
-      <div className="max-w-3xl mx-auto bg-white shadow-2xl rounded-2xl p-6 md:p-10 border border-gray-100">
+      <div className="w-full sm:max-w-3xl mx-auto bg-white shadow-2xl rounded-2xl p-6 md:p-10 border border-gray-100">
         
         <ProfileHeader user={user} setUser={setUser} setNotification={setNotification} />
         {notification && (
@@ -224,24 +224,28 @@ function SecuritySettings({ onChangePasswordClick }: SecuritySettingsProps) {
       </h2>
 
       {/* Alterar Senha */}
-      <div className="flex justify-between items-center p-4 bg-red-50 rounded-lg shadow-sm border border-red-200">
-        <div className="flex items-center">
-          <Key className="w-5 h-5 text-red-600 mr-4" />
-          <div>
-            <p className="text-base font-medium text-gray-700">Alterar senha</p>
-            <p className="text-sm text-gray-500">
-              Mantenha a sua conta segura, atualizando a sua password
-              regularmente.
-            </p>
+      <div className="p-4 bg-red-50 rounded-lg shadow-sm border border-red-200">
+        <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-4">
+          <div className="flex items-start sm:items-center gap-4 flex-1">
+            <Key className="w-5 h-5 text-red-600" />
+            <div>
+              <p className="text-base font-medium text-gray-700">Alterar senha</p>
+              <p className="text-sm text-gray-500">
+                Mantenha a sua conta segura, atualizando a sua password regularmente.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex-shrink-0">
+            <button
+              type="button"
+              onClick={onChangePasswordClick}
+              className="px-4 py-2 text-sm font-semibold rounded-lg text-white bg-red-600 hover:bg-red-700 transition-colors shadow-md"
+            >
+              Mudar
+            </button>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={onChangePasswordClick}
-          className="px-4 py-2 text-sm font-semibold rounded-lg text-white bg-red-600 hover:bg-red-700 transition-colors shadow-md"
-        >
-          Mudar
-        </button>
       </div>
     </div>
   );
