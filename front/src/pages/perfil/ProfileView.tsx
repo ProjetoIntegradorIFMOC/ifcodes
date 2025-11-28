@@ -3,6 +3,7 @@ import type { User } from "@/types";
 import { User as UserIcon, Mail, Zap, Loader2, Key, Pencil } from "lucide-react";
 import { useNavigate } from "react-router";
 import { useState } from "react";
+import axios from "axios";
 import { updateName } from "@/services/ProfileService";
 import Notification from "@/components/Notification";
 
@@ -30,8 +31,8 @@ export default function ProfileView() {
 
   // 3. Estado de Sucesso
   return (
-    <div className="container mx-auto p-4 md:p-8 min-h-screen">
-      <div className="w-full sm:max-w-3xl mx-auto bg-white shadow-2xl rounded-2xl p-6 md:p-10 border border-gray-100">
+    <div className="px-4 md:px-8 min-h-screen">
+      <div className="w-full mx-auto max-w-full sm:max-w-3xl bg-white shadow-2xl rounded-2xl p-6 md:p-10 border border-gray-100">
         
         <ProfileHeader user={user} setUser={setUser} setNotification={setNotification} />
         {notification && (
@@ -117,13 +118,25 @@ function ProfileHeader({ user, setUser, setNotification }: ProfileHeaderProps) {
       const data = await updateName(name, token);
       setUser({ ...user, name: data.name });
       setEditing(false);
-      setNotification &&
-        setNotification({ type: "success", message: "Nome atualizado com sucesso." });
-    } catch (err: any) {
+      // setNotification é obrigatório pela interface -> chamar diretamente
+      setNotification({ type: "success", message: "Nome atualizado com sucesso." });
+    } catch (err: unknown) {
       console.error("Failed to update name", err);
-      // Always show a Portuguese error message for the user
-      const msg = "Não foi possível atualizar o nome. Verifique e tente novamente.";
-      setNotification && setNotification({ type: "error", message: msg });
+      let msg = "Não foi possível atualizar o nome. Verifique e tente novamente.";
+
+      // Se for um erro do Axios, tentar extrair a mensagem retornada pelo servidor
+      if (axios.isAxiosError(err)) {
+        const data = err.response?.data as unknown;
+        if (data && typeof data === "object" && "message" in (data as any) && typeof (data as any).message === "string") {
+          msg = (data as any).message;
+        } else if (err.message) {
+          msg = err.message;
+        }
+      } else if (err instanceof Error) {
+        msg = err.message || msg;
+      }
+
+      setNotification({ type: "error", message: msg });
     } finally {
       setSaving(false);
     }
@@ -168,8 +181,10 @@ function ProfileHeader({ user, setUser, setNotification }: ProfileHeaderProps) {
               <button
                 type="button"
                 onClick={onSave}
-                disabled={saving}
-                className="w-full sm:w-auto px-3 py-1 text-sm font-medium rounded-md bg-green-600 text-white text-center"
+                disabled={saving || name.trim() === ""}
+                className={`w-full sm:w-auto px-3 py-1 text-sm font-medium rounded-md text-white text-center ${
+                  saving || name.trim() === "" ? "bg-green-400 cursor-not-allowed" : "bg-green-600 hover:bg-green-700"
+                }`}
               >
                 {saving ? "A gravar..." : "Guardar"}
               </button>
