@@ -1,6 +1,6 @@
 import { useUser } from "@/context/UserContext";
 import type { User } from "@/types";
-import { User as UserIcon, Mail, Zap, Loader2, Key } from "lucide-react";
+import { User as UserIcon, Mail, Zap, Loader2, Key, Pencil } from "lucide-react";
 import { useNavigate } from "react-router";
 import { useState } from "react";
 import { updateName } from "@/services/ProfileService";
@@ -103,7 +103,7 @@ interface ProfileHeaderProps {
   ) => void;
 }
 
-function ProfileHeader({ user, setUser, setNotification }: ProfileHeaderProps) {
+  function ProfileHeader({ user, setUser, setNotification }: ProfileHeaderProps) {
   const [editing, setEditing] = useState(false);
   const [name, setNameState] = useState(user.name || "");
   const [saving, setSaving] = useState(false);
@@ -121,7 +121,8 @@ function ProfileHeader({ user, setUser, setNotification }: ProfileHeaderProps) {
         setNotification({ type: "success", message: "Nome atualizado com sucesso." });
     } catch (err: any) {
       console.error("Failed to update name", err);
-      const msg = err?.response?.data?.message || "Erro ao atualizar o nome do utilizador.";
+      // Always show a Portuguese error message for the user
+      const msg = "Não foi possível atualizar o nome. Verifique e tente novamente.";
       setNotification && setNotification({ type: "error", message: msg });
     } finally {
       setSaving(false);
@@ -131,21 +132,21 @@ function ProfileHeader({ user, setUser, setNotification }: ProfileHeaderProps) {
   return (
     <div className="flex flex-col sm:flex-row items-center sm:items-start space-y-6 sm:space-y-0 sm:space-x-8 border-b pb-6 mb-8">
       {/* Imagem/Avatar */}
-      <div className="w-24 h-24 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-4xl font-extrabold shadow-xl ring-4 ring-purple-100">
-        {displayName ? displayName[0].toUpperCase() : <UserIcon className="w-10 h-10" />}
-      </div>
+      <div className="flex-shrink-0 w-28 h-28 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-4xl font-extrabold shadow-xl ring-4 ring-purple-100">
+          {displayName ? displayName[0].toUpperCase() : <UserIcon className="w-10 h-10" />}
+        </div>
 
       {/* Informações Básicas e Status */}
-      <div className="text-center sm:text-left w-full">
+      <div className="text-center sm:text-left w-full flex-1">
         <div className="flex items-center justify-center sm:justify-start gap-3">
           {editing ? (
             <input
-              className="text-3xl font-extrabold text-gray-900 leading-tight border-b px-2 py-1"
+              className="text-2xl font-extrabold text-gray-900 leading-tight border-b px-2 py-1 min-w-[220px]"
               value={name}
               onChange={(e) => setNameState(e.target.value)}
             />
           ) : (
-            <h1 className="text-3xl font-extrabold text-gray-900 leading-tight">
+            <h1 className="text-2xl font-extrabold text-gray-900 leading-tight">
               {displayName}
             </h1>
           )}
@@ -154,9 +155,10 @@ function ProfileHeader({ user, setUser, setNotification }: ProfileHeaderProps) {
             <button
               type="button"
               onClick={() => setEditing(true)}
-              className="ml-2 px-3 py-1 text-sm font-medium rounded-md bg-purple-600 text-white"
+              className="ml-2 p-2 rounded-full bg-purple-600 text-white flex items-center justify-center"
+              aria-label="Editar nome"
             >
-              Editar
+              <Pencil className="w-4 h-4" />
             </button>
           ) : (
             <div className="flex items-center gap-2">
