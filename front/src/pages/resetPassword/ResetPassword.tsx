@@ -58,12 +58,25 @@ export default function ResetPassword() {
                 navigate("/login");
             }, 3000);
         } catch (error) {
-            if (axios.isAxiosError(error) && error.response?.data?.message) {
-                setError(error.response.data.message);
-            } else if (axios.isAxiosError(error) && error.response?.data?.email) {
-                 setError(error.response.data.email[0]);
+            console.error("Erro ao redefinir senha:", error);
+            if (axios.isAxiosError(error)) {
+                const data = error.response?.data;
+                console.error("Status:", error.response?.status);
+                console.error("Data:", data);
+
+                if (data?.message) {
+                    setError(data.message);
+                } else if (data?.errors?.email) {
+                    setError(data.errors.email[0]);
+                } else if (data?.errors?.password) {
+                    setError(data.errors.password[0]);
+                } else if (data?.email) {
+                    setError(Array.isArray(data.email) ? data.email[0] : data.email);
+                } else {
+                    setError("Ocorreu um erro ao redefinir a senha. Tente novamente.");
+                }
             } else {
-                setError("Ocorreu um erro ao redefinir a senha. Tente novamente.");
+                setError("Ocorreu um erro inesperado.");
             }
         } finally {
             setLoading(false);
