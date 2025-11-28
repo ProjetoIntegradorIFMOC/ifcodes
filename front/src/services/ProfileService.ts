@@ -15,4 +15,5 @@ export async function updateName(name: string, token: string) {
     return res.data;
 }
 
-export default { updateName };
+// Usar somente exportações nomeadas para manter consistência de importações
+// (import { updateName } from '@/services/ProfileService')
