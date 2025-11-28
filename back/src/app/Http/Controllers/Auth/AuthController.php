@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\ChangePasswordRequest;
+use App\Http\Requests\Auth\UpdateUserRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -79,12 +80,9 @@ class AuthController extends Controller
         ], 200);
     }
 
-    public function update(Request $request)
+    public function update(UpdateUserRequest $request)
     {
-        $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-        ]);
-
+        // Validação tratada por UpdateUserRequest
         $user = $request->user();
         $user->name = $request->input('name');
         $user->save();
