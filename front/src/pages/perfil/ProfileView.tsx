@@ -137,36 +137,39 @@ interface ProfileHeaderProps {
         </div>
 
       {/* Informações Básicas e Status */}
-      <div className="text-center sm:text-left w-full flex-1">
-        <div className="flex items-center justify-center sm:justify-start gap-3">
+      <div className="text-center sm:text-left w-full flex-1 min-w-0">
+        {/* Use column on small screens to avoid overflow; on sm+ keep row */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-center sm:justify-start gap-3">
           {editing ? (
             <input
-              className="text-2xl font-extrabold text-gray-900 leading-tight border-b px-2 py-1 min-w-[220px]"
+              className="w-full sm:w-auto text-2xl sm:text-2xl font-extrabold text-gray-900 leading-tight border-b px-2 py-1"
               value={name}
               onChange={(e) => setNameState(e.target.value)}
             />
           ) : (
-            <h1 className="text-2xl font-extrabold text-gray-900 leading-tight">
+            <h1 className="text-2xl font-extrabold text-gray-900 leading-tight break-words">
               {displayName}
             </h1>
           )}
 
           {!editing ? (
-            <button
-              type="button"
-              onClick={() => setEditing(true)}
-              className="ml-2 p-2 rounded-full bg-purple-600 text-white flex items-center justify-center"
-              aria-label="Editar nome"
-            >
-              <Pencil className="w-4 h-4" />
-            </button>
+            <div className="w-full sm:w-auto flex justify-center sm:justify-start">
+              <button
+                type="button"
+                onClick={() => setEditing(true)}
+                className="ml-0 sm:ml-2 p-2 rounded-full bg-purple-600 text-white flex items-center justify-center"
+                aria-label="Editar nome"
+              >
+                <Pencil className="w-4 h-4" />
+              </button>
+            </div>
           ) : (
-            <div className="flex items-center gap-2">
+            <div className="w-full sm:w-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
               <button
                 type="button"
                 onClick={onSave}
                 disabled={saving}
-                className="px-3 py-1 text-sm font-medium rounded-md bg-green-600 text-white"
+                className="w-full sm:w-auto px-3 py-1 text-sm font-medium rounded-md bg-green-600 text-white text-center"
               >
                 {saving ? "A gravar..." : "Guardar"}
               </button>
@@ -176,14 +179,14 @@ interface ProfileHeaderProps {
                   setEditing(false);
                   setNameState(user.name || "");
                 }}
-                className="px-3 py-1 text-sm font-medium rounded-md bg-gray-200"
+                className="w-full sm:w-auto px-3 py-1 text-sm font-medium rounded-md bg-gray-200 text-center"
               >
                 Cancelar
               </button>
             </div>
           )}
         </div>
-
+      
         <p className="flex items-center justify-center sm:justify-start text-lg text-gray-600 mt-1">
           <Mail className="w-4 h-4 mr-2 text-purple-600" /> {user.email}
         </p>
