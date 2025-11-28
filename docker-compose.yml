@@ -119,5 +119,14 @@ services:
     depends_on:
       - backend_app
 
+  # --- SERVIÇO DE EMAIL (MAILPIT) ---
+  mailpit:
+    image: axllent/mailpit
+    container_name: mailpit
+    restart: unless-stopped
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+
 volumes:
   postgres_data:
