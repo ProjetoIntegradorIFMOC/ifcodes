@@ -103,7 +103,7 @@ interface ProfileHeaderProps {
   ) => void;
 }
 
-  function ProfileHeader({ user, setUser, setNotification }: ProfileHeaderProps) {
+function ProfileHeader({ user, setUser, setNotification }: ProfileHeaderProps) {
   const [editing, setEditing] = useState(false);
   const [name, setNameState] = useState(user.name || "");
   const [saving, setSaving] = useState(false);
