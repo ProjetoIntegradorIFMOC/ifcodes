@@ -126,9 +126,9 @@ function ProfileHeader({ user, setUser, setNotification }: ProfileHeaderProps) {
 
       // Se for um erro do Axios, tentar extrair a mensagem retornada pelo servidor
       if (axios.isAxiosError(err)) {
-        const data = err.response?.data as unknown;
-        if (data && typeof data === "object" && "message" in (data as any) && typeof (data as any).message === "string") {
-          msg = (data as any).message;
+        const data = err.response?.data;
+        if (typeof data?.message === "string") {
+          msg = data.message;
         } else if (err.message) {
           msg = err.message;
         }
