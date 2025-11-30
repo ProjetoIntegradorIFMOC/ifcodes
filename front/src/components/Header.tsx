@@ -265,9 +265,9 @@ export default function Header() {
                 {isProfileMenuOpen && (
                   <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-purple-100 py-2 z-50">
                     <Link
-                      to="/perfil" // <-- A ROTA
+                      to="/perfil"
                       className="flex flex-col px-4 py-3 border-b border-gray-100 text-gray-700 hover:bg-purple-50 transition-colors"
-                      onClick={() => setIsProfileMenuOpen(false)} // Fecha o menu ao clicar
+                      onClick={() => setIsProfileMenuOpen(false)}
                     >
                       <p className="text-sm font-medium text-gray-900 hover:text-purple-700">
                         Meu Perfil
@@ -402,9 +402,9 @@ export default function Header() {
                       </div>
                       <div>
                         <Link
-                          to="/perfil" // <-- A ROTA
+                          to="/perfil"
                           className="flex flex-col px-4 py-3 border-b border-gray-100 text-gray-700 hover:bg-purple-50 transition-colors"
-                          onClick={() => setIsProfileMenuOpen(false)} // Fecha o menu ao clicar
+                          onClick={() => setIsProfileMenuOpen(false)}
                         >
                           <p className="text-sm font-medium text-gray-900">
                             Meu Perfil
