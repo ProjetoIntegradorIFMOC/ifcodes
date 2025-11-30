@@ -46,7 +46,7 @@ export default function Classes() {
   const loadClasses = async () => {
     try {
       setLoading(true);
-      // If the logged user is a student, fetch only their classes
+      // Se o usuário logado for estudante, buscar apenas suas turmas
       if (user && user.roles && user.roles.includes("student")) {
         const data = await ClassesService.getClassesByStudent();
         setClasses(data);

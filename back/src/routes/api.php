@@ -26,6 +26,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Rotas de informações do usuário autenticado
     Route::get('/user', [AuthController::class, 'user']);
+    Route::patch('/user', [AuthController::class, 'update']);
     Route::get('/user/roles', [AuthController::class, 'roles']);
     Route::get('/user/permissions', [AuthController::class, 'permissions']);
     Route::post('/user/change-password', [AuthController::class, 'changePassword']);
@@ -38,6 +39,11 @@ Route::middleware('auth:sanctum')->group(function () {
         ->parameters(['professores' => 'professor']);
     Route::apiResource('alunos', AlunoController::class);
     Route::apiResource('turmas', TurmaController::class);
+
+
+    Route::get('/turmas/{turma_id}/listar-alunos', [TurmaController::class, 'listarAlunos']);
+    Route::post('/turmas/{turma_id}/vincular-aluno/{aluno_id}', [TurmaController::class, 'vincularAluno']);
+    Route::delete('/turmas/{turma_id}/desvincular-aluno/{aluno_id}', [TurmaController::class, 'desvincularAluno']);
 
     // Rota para listar todas as submissões de uma atividade de uma turma (apenas professor/admin)
     Route::get('/turmas/{turma_id}/atividades/{atividade_id}/submissoes', [SubmissaoController::class, 'getSubmissionsByActivity']);
