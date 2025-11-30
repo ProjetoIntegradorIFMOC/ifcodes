@@ -84,8 +84,7 @@ class AuthController extends Controller
     {
         // Validação tratada por UpdateUserRequest
         $user = $request->user();
-        $user->name = $request->input('name');
-        $user->save();
+        $user->update($request->validated());
 
         return response()->json([
             'id' => $user->id,
