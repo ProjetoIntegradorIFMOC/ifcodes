@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\ChangePasswordRequest;
+use App\Http\Requests\Auth\UpdateUserRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -76,6 +77,19 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Senha alterada com sucesso. Por favor, faça login novamente.'
+        ], 200);
+    }
+
+    public function update(UpdateUserRequest $request)
+    {
+        // Validação tratada por UpdateUserRequest
+        $user = $request->user();
+        $user->update($request->validated());
+
+        return response()->json([
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
         ], 200);
     }
 }

@@ -26,6 +26,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Rotas de informações do usuário autenticado
     Route::get('/user', [AuthController::class, 'user']);
+    Route::patch('/user', [AuthController::class, 'update']);
     Route::get('/user/roles', [AuthController::class, 'roles']);
     Route::get('/user/permissions', [AuthController::class, 'permissions']);
     Route::post('/user/change-password', [AuthController::class, 'changePassword']);
