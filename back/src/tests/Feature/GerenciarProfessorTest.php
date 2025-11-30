@@ -184,4 +184,60 @@ class GerenciarProfessorTest extends TestCase
             'email' => 'mariaaparecida@gmail.com',
         ]);
     }
+
+
+    /**
+     * @test
+     * Caso 1.2: Tentar criar um professor sem preencher o campo "Nome"
+     */
+    public function admin_nao_pode_criar_professor_sem_nome(): void
+    {
+        $this->createAndActAsAdmin();
+
+        $payload = [
+            'name' => '',
+            'email' => 'alessandra-araujo75@estagiarios.com',
+            'password' => '12345678',
+            'password_confirmation' => '12345678',
+            'area_atuacao' => 'Ciência da Computação',
+        ];
+
+        $response = $this->postJson(route('professores.store'), $payload);
+
+        // Espera validação (422) e erro no campo 'name'
+        $response->assertStatus(422)
+                 ->assertJsonValidationErrors(['name']);
+
+        // Nenhum usuário ou registro de professor deve ter sido criado
+        $this->assertDatabaseMissing('users', ['email' => 'alessandra-araujo75@estagiarios.com']);
+        $this->assertDatabaseMissing('professor', ['area_atuacao' => 'Ciência da Computação']);
+    }
+
+
+    /**
+     * @test
+     * Caso 1.3: Tentar criar um professor sem preencher o campo "E-mail"
+     */
+    public function admin_nao_pode_criar_professor_sem_email(): void
+    {
+        $this->createAndActAsAdmin();
+
+        $payload = [
+            'name' => 'Cristiane Natália Gonçalves',
+            'email' => '',
+            'password' => '12345678',
+            'password_confirmation' => '12345678',
+            'area_atuacao' => 'Ciência da Computação',
+        ];
+
+        $response = $this->postJson(route('professores.store'), $payload);
+
+        // Espera validação (422) e erro no campo 'email'
+        $response->assertStatus(422)
+                 ->assertJsonValidationErrors(['email']);
+
+        // Nenhum usuário ou registro de professor deve ter sido criado
+        $this->assertDatabaseMissing('users', ['name' => 'Cristiane Natália Gonçalves']);
+        $this->assertDatabaseMissing('professor', ['area_atuacao' => 'Ciência da Computação']);
+    }
 }
