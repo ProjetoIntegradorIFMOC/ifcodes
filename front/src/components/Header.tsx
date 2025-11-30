@@ -53,23 +53,23 @@ export default function Header() {
     // Só mostra o item "Gerenciar" se o usuário for admin
     ...(isAdmin
       ? [
-          {
-            label: "Gerenciar",
-            submenu: [
-              { to: "/students", label: "Gerenciar Alunos" },
-              { to: "/teachers", label: "Gerenciar Professores" },
-            ],
-          },
-        ]
+        {
+          label: "Gerenciar",
+          submenu: [
+            { to: "/students", label: "Gerenciar Alunos" },
+            { to: "/teachers", label: "Gerenciar Professores" },
+          ],
+        },
+      ]
       : []),
     // Mostra o item "Problemas" se o usuário for admin ou professor
     ...(isAdmin || isProfessor
       ? [
-          {
-            label: "Problemas",
-            submenu: [{ to: "/problems", label: "Gerenciar Problemas" }],
-          },
-        ]
+        {
+          label: "Problemas",
+          submenu: [{ to: "/problems", label: "Gerenciar Problemas" }],
+        },
+      ]
       : []),
   ];
 
@@ -183,11 +183,10 @@ export default function Header() {
                       // Item com dropdown
                       <div className="relative dropdown-container">
                         <button
-                          className={`relative px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center gap-1 ${
-                            item.submenu.some((sub) => isActiveRoute(sub.to))
+                          className={`relative px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center gap-1 ${item.submenu.some((sub) => isActiveRoute(sub.to))
                               ? "text-blue-600 bg-blue-50 shadow-sm"
                               : "text-gray-700 hover:text-blue-600 hover:bg-gray-50"
-                          }`}
+                            }`}
                         >
                           {item.label}
                           <ChevronDown className="w-4 h-4" />
@@ -195,8 +194,8 @@ export default function Header() {
                           {item.submenu.some((sub) =>
                             isActiveRoute(sub.to)
                           ) && (
-                            <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1/2 h-0.5 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full"></div>
-                          )}
+                              <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1/2 h-0.5 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full"></div>
+                            )}
                         </button>
                         {/* Dropdown menu */}
                         <div className="absolute left-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible dropdown-container:hover dropdown-menu transition-all duration-200 z-50">
@@ -205,11 +204,10 @@ export default function Header() {
                               <Link
                                 key={subItem.to}
                                 to={subItem.to}
-                                className={`block px-4 py-2 text-sm transition-colors ${
-                                  isActiveRoute(subItem.to)
+                                className={`block px-4 py-2 text-sm transition-colors ${isActiveRoute(subItem.to)
                                     ? "text-blue-600 bg-blue-50 font-medium"
                                     : "text-gray-700 hover:text-blue-600 hover:bg-gray-50"
-                                }`}
+                                  }`}
                               >
                                 {subItem.label}
                               </Link>
@@ -227,11 +225,10 @@ export default function Header() {
                       // Item sem dropdown
                       <Link
                         to={item.to!}
-                        className={`relative px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-                          isActiveRoute(item.to!)
+                        className={`relative px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${isActiveRoute(item.to!)
                             ? "text-blue-600 bg-blue-50 shadow-sm"
                             : "text-gray-700 hover:text-blue-600 hover:bg-gray-50"
-                        }`}
+                          }`}
                       >
                         {item.label}
                         {/* Barra decorativa se está ativo */}
@@ -259,9 +256,8 @@ export default function Header() {
                     <User className="w-5 h-5 text-white" />
                   </div>
                   <ChevronDown
-                    className={`w-4 h-4 text-gray-900 transition-transform duration-200 ${
-                      isProfileMenuOpen ? "rotate-180" : ""
-                    }`}
+                    className={`w-4 h-4 text-gray-900 transition-transform duration-200 ${isProfileMenuOpen ? "rotate-180" : ""
+                      }`}
                   />
                 </button>
 
@@ -328,9 +324,8 @@ export default function Header() {
 
           {/* Menu mobile (aparece só no mobile) */}
           <div
-            className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out ${
-              isMobileMenuOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
-            }`}
+            className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out ${isMobileMenuOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+              }`}
           >
             <div className="border-t border-gray-200/50 bg-white/95 backdrop-blur-sm">
               <div className="px-2 pt-3 pb-4 space-y-2">
@@ -345,35 +340,31 @@ export default function Header() {
                               openDropdown === item.label ? null : item.label
                             )
                           }
-                          className={`relative flex items-center justify-between w-full px-4 py-3 rounded-lg text-base font-medium transition-all duration-200 ${
-                            item.submenu.some((sub) => isActiveRoute(sub.to))
+                          className={`relative flex items-center justify-between w-full px-4 py-3 rounded-lg text-base font-medium transition-all duration-200 ${item.submenu.some((sub) => isActiveRoute(sub.to))
                               ? "text-blue-600 bg-blue-50 shadow-sm border-l-4 border-blue-600"
                               : "text-gray-700 hover:text-blue-600 hover:bg-gray-50 border-l-4 border-transparent"
-                          }`}
+                            }`}
                         >
                           <span>{item.label}</span>
                           <ChevronDown
-                            className={`w-4 h-4 transition-transform ${
-                              openDropdown === item.label ? "rotate-180" : ""
-                            }`}
+                            className={`w-4 h-4 transition-transform ${openDropdown === item.label ? "rotate-180" : ""
+                              }`}
                           />
                         </button>
                         {/* Submenu items */}
                         <div
-                          className={`overflow-hidden transition-all duration-200 ${
-                            openDropdown === item.label ? "max-h-48" : "max-h-0"
-                          }`}
+                          className={`overflow-hidden transition-all duration-200 ${openDropdown === item.label ? "max-h-48" : "max-h-0"
+                            }`}
                         >
                           <div className="pl-4 pt-2 space-y-1">
                             {item.submenu.map((subItem) => (
                               <Link
                                 key={subItem.to}
                                 to={subItem.to}
-                                className={`block px-4 py-2 rounded-lg text-sm transition-all duration-200 ${
-                                  isActiveRoute(subItem.to)
+                                className={`block px-4 py-2 rounded-lg text-sm transition-all duration-200 ${isActiveRoute(subItem.to)
                                     ? "text-blue-600 bg-blue-50 font-medium"
                                     : "text-gray-600 hover:text-blue-600 hover:bg-gray-50"
-                                }`}
+                                  }`}
                                 onClick={closeMobileMenu}
                               >
                                 {subItem.label}
@@ -386,11 +377,10 @@ export default function Header() {
                       // Item sem submenu
                       <Link
                         to={item.to!}
-                        className={`relative flex items-center px-4 py-3 rounded-lg text-base font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-                          isActiveRoute(item.to!)
+                        className={`relative flex items-center px-4 py-3 rounded-lg text-base font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${isActiveRoute(item.to!)
                             ? "text-blue-600 bg-blue-50 shadow-sm border-l-4 border-blue-600"
                             : "text-gray-700 hover:text-blue-600 hover:bg-gray-50 border-l-4 border-transparent"
-                        }`}
+                          }`}
                         onClick={closeMobileMenu}
                       >
                         <span className="flex-1">{item.label}</span>
@@ -411,12 +401,18 @@ export default function Header() {
                         <User className="w-6 h-6 text-white" />
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-gray-900">
-                          Meu Perfil
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          Gerencie sua conta
-                        </p>
+                        <Link
+                          to="/perfil" // <-- A ROTA
+                          className="flex flex-col px-4 py-3 border-b border-gray-100 text-gray-700 hover:bg-purple-50 transition-colors"
+                          onClick={() => setIsProfileMenuOpen(false)} // Fecha o menu ao clicar
+                        >
+                          <p className="text-sm font-medium text-gray-900">
+                            Meu Perfil
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            Gerencie sua conta
+                          </p>
+                        </Link>
                       </div>
                     </div>
                   </div>
