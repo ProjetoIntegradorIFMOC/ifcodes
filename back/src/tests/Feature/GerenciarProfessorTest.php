@@ -240,4 +240,175 @@ class GerenciarProfessorTest extends TestCase
         $this->assertDatabaseMissing('users', ['name' => 'Cristiane Natália Gonçalves']);
         $this->assertDatabaseMissing('professor', ['area_atuacao' => 'Ciência da Computação']);
     }
+
+
+    /**
+     * @test
+     * Caso 1.4: Tentar criar um professor sem preencher o campo "Senha"
+     */
+    public function admin_nao_pode_criar_professor_sem_senha(): void
+    {
+        $this->createAndActAsAdmin();
+
+        $payload = [
+            'name' => 'Nicole Antonella Brito',
+            'email' => 'nicole-brito88@technicolor.com',
+            'password' => '',
+            'password_confirmation' => '12345678',
+            'area_atuacao' => 'Ciência da Computação',
+        ];
+
+        $response = $this->postJson(route('professores.store'), $payload);
+
+        // Espera validação (422) e erro no campo 'password' (obrigatório) e/ou confirmação
+        $response->assertStatus(422)
+                 ->assertJsonValidationErrors(['password']);
+
+        // Nenhum usuário ou registro de professor deve ter sido criado
+        $this->assertDatabaseMissing('users', ['email' => 'nicole-brito88@technicolor.com']);
+        $this->assertDatabaseMissing('professor', ['area_atuacao' => 'Ciência da Computação']);
+    }
+
+
+    /**
+     * @test
+     * Caso 1.5: Tentar criar um professor sem preencher o campo "Confirmar Senha"
+     */
+    public function admin_nao_pode_criar_professor_sem_confirmar_senha(): void
+    {
+        $this->createAndActAsAdmin();
+
+        $payload = [
+            'name' => 'Aline Camila Kamilly Aragão',
+            'email' => 'alinecamilaaragao@fosj.unesp.br',
+            'password' => '12345678',
+            'password_confirmation' => '',
+            'area_atuacao' => 'Ciência da Computação',
+        ];
+
+        $response = $this->postJson(route('professores.store'), $payload);
+
+        // Espera validação (422) indicando que a confirmação não bate
+        $response->assertStatus(422)
+                 ->assertJsonValidationErrors(['password']);
+
+        $this->assertDatabaseMissing('users', ['email' => 'alinecamilaaragao@fosj.unesp.br']);
+        $this->assertDatabaseMissing('professor', ['area_atuacao' => 'Ciência da Computação']);
+    }
+
+
+    /**
+     * @test
+     * Caso 1.6: Tentar criar um professor com senhas diferentes
+     */
+    public function admin_nao_pode_criar_professor_com_senhas_diferentes(): void
+    {
+        $this->createAndActAsAdmin();
+
+        $payload = [
+            'name' => 'Lívia Regina Juliana Nogueira',
+            'email' => 'livia-nogueira74@yahoo.se',
+            'password' => '12345678',
+            'password_confirmation' => 'senhadiferente',
+            'area_atuacao' => 'Ciência da Computação',
+        ];
+
+        $response = $this->postJson(route('professores.store'), $payload);
+
+        // Espera validação (422) indicando que as senhas não coincidam
+        $response->assertStatus(422)
+                 ->assertJsonValidationErrors(['password']);
+
+        $this->assertDatabaseMissing('users', ['email' => 'livia-nogueira74@yahoo.se']);
+        $this->assertDatabaseMissing('professor', ['area_atuacao' => 'Ciência da Computação']);
+    }
+
+
+    /**
+     * @test
+     * Caso 1.7: Tentar criar um professor com e-mail inválido
+     */
+    public function admin_nao_pode_criar_professor_com_email_invalido(): void
+    {
+        $this->createAndActAsAdmin();
+
+        $payload = [
+            'name' => 'Marcos Otávio Martin Almeida',
+            'email' => 'mail.invalido',
+            'password' => '12345678',
+            'password_confirmation' => '12345678',
+            'area_atuacao' => 'Ciência da Computação',
+        ];
+
+        $response = $this->postJson(route('professores.store'), $payload);
+
+        // Espera validação (422) e erro no campo 'email'
+        $response->assertStatus(422)
+                 ->assertJsonValidationErrors(['email']);
+
+        $this->assertDatabaseMissing('users', ['email' => 'mail.invalido']);
+        $this->assertDatabaseMissing('professor', ['area_atuacao' => 'Ciência da Computação']);
+    }
+
+
+    /**
+     * @test
+     * Caso 1.8: Tentar criar um professor com senha com menos de 8 caracteres
+     */
+    public function admin_nao_pode_criar_professor_com_senha_curta(): void
+    {
+        $this->createAndActAsAdmin();
+
+        $payload = [
+            'name' => 'Jaqueline Kamilly Evelyn Bernardes',
+            'email' => 'jaqueline_kamilly@tilapiareal.com.br',
+            'password' => '123',
+            'password_confirmation' => '123',
+            'area_atuacao' => 'Ciência da Computação',
+        ];
+
+        $response = $this->postJson(route('professores.store'), $payload);
+
+        // Espera validação (422) e erro no campo 'password' (mínimo de 8 caracteres)
+        $response->assertStatus(422)
+                 ->assertJsonValidationErrors(['password']);
+
+        $this->assertDatabaseMissing('users', ['email' => 'jaqueline_kamilly@tilapiareal.com.br']);
+        $this->assertDatabaseMissing('professor', ['area_atuacao' => 'Ciência da Computação']);
+    }
+
+
+    /**
+     * @test
+     * Caso 1.9: Tentar criar um professor com e-mail já cadastrado
+     */
+    public function admin_nao_pode_criar_professor_com_email_duplicado(): void
+    {
+        $this->createAndActAsAdmin();
+
+        // Pré-condição: professor já cadastrado
+        $this->createProfessor(
+            'Anderson Pedro Henrique Bruno Brito',
+            'anderson.pedro.brito@iedi.com.br',
+            'Ciência da Computação'
+        );
+
+        // Tenta criar outro professor com o mesmo e-mail
+        $payload = [
+            'name' => 'Anderson Pedro Henrique',
+            'email' => 'anderson.pedro.brito@iedi.com.br',
+            'password' => '12345678',
+            'password_confirmation' => '12345678',
+            'area_atuacao' => 'Matemática',
+        ];
+
+        $response = $this->postJson(route('professores.store'), $payload);
+
+        // Espera validação (422) e erro no campo 'email' (único)
+        $response->assertStatus(422)
+                 ->assertJsonValidationErrors(['email']);
+
+        // Verifica que não foi criado um professor com a nova área
+        $this->assertDatabaseMissing('professor', ['area_atuacao' => 'Matemática']);
+    }
 }
