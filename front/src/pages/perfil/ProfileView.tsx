@@ -118,7 +118,6 @@ function ProfileHeader({ user, setUser, setNotification }: ProfileHeaderProps) {
       const data = await updateName(name, token);
       setUser({ ...user, name: data.name });
       setEditing(false);
-      // setNotification é obrigatório pela interface -> chamar diretamente
       setNotification({ type: "success", message: "Nome atualizado com sucesso." });
     } catch (err: unknown) {
       console.error("Failed to update name", err);
