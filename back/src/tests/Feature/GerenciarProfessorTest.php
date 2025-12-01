@@ -47,8 +47,10 @@ class GerenciarProfessorTest extends TestCase
         $user->assignRole('professor');
 
         // 3. Cria o registro específico na tabela 'professor' (assumindo a chave estrangeira user_id)
+        // The `professor` table uses the user's id as primary key (`id`),
+        // so create the record with 'id' => $user->id to match the controller/model.
         Professor::create([
-            'user_id' => $user->id,
+            'id' => $user->id,
             'area_atuacao' => $area,
         ]);
 
@@ -329,11 +331,9 @@ class GerenciarProfessorTest extends TestCase
                 'email' => 'rogeriosena@gmail.com', 
                 'area_atuacao' => 'Ciência da Computação',
             ])
-            // Verificar a estrutura das ações (links)
-            ->assertJsonPath('data.0.links', [
-                'edit' => route('professores.update', $professor->id),
-                'delete' => route('professores.destroy', $professor->id),
-            ]);
+            // Verificar que o registro contém o id (frontend constrói os links)
+            ->assertJsonPath('data.0.id', $professor->id)
+            ->assertJsonStructure(['data' => [['id','name','email','area_atuacao']]]);
     }
 
     /**
@@ -377,6 +377,7 @@ class GerenciarProfessorTest extends TestCase
             // A senha não é necessária no payload PUT, a menos que seja um campo obrigatório
             // mas mantemos para seguir o cenário de CT se o Controller esperar:
             'password' => 'mariaaf12345', 
+            'password_confirmation' => 'mariaaf12345',
             'area_atuacao' => 'Ciência de Dados',
         ];
 
@@ -397,7 +398,7 @@ class GerenciarProfessorTest extends TestCase
         ]);
         
         $this->assertDatabaseHas('professor', [
-            'user_id' => $old_user_id,
+            'id' => $old_user_id,
             'area_atuacao' => 'Ciência de Dados',
         ]);
 
