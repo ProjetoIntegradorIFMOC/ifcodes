@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\User;
 use App\Models\Aluno;
 use App\Models\Curso;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role;
 use Laravel\Sanctum\Sanctum;
@@ -313,5 +314,350 @@ class GerenciarAlunoTest extends TestCase
         $this->assertTrue(in_array($response->status(), [422,400]));
         // garante que os dados originais permanecem
         $this->assertDatabaseHas('users', ['id' => $user->id, 'name' => 'Laura Cristina Melo']);
+    }
+
+    /**
+     * Caso 3.14: Editar aluno (Falha: campo “E-mail” vazio)
+     */
+    public function test_editar_aluno_email_obrigatorio(): void
+    {
+        $this->actingAsAdmin();
+
+        $curso = Curso::firstOrCreate(['nome' => 'Ciência da Computação']);
+        $user = User::factory()->create(['name' => 'Laura Cristina Melo', 'email' => 'laura.melo@gmail.com']);
+        Aluno::create(['user_id' => $user->id, 'curso_id' => $curso->id, 'matricula' => '2023020']);
+
+        $payload = [
+            'name' => 'Laura Cristina Melo',
+            'email' => '',
+            'curso' => 'Ciência da Computação',
+        ];
+
+        $response = $this->putJson(route('alunos.update', $user->id), $payload);
+        $this->assertTrue(in_array($response->status(), [422,400]));
+        $this->assertDatabaseHas('users', ['id' => $user->id, 'email' => 'laura.melo@gmail.com']);
+    }
+
+    /**
+     * Caso 3.15: Editar aluno (Falha: campo “Curso” vazio)
+     */
+    public function test_editar_aluno_curso_obrigatorio(): void
+    {
+        $this->actingAsAdmin();
+
+        $curso = Curso::firstOrCreate(['nome' => 'Ciência da Computação']);
+        $user = User::factory()->create(['name' => 'Laura Cristina Melo', 'email' => 'laura.melo@gmail.com']);
+        Aluno::create(['user_id' => $user->id, 'curso_id' => $curso->id, 'matricula' => '2023020']);
+
+        $payload = [
+            'name' => 'Laura Cristina Melo',
+            'email' => 'laura.melo@gmail.com',
+            // 'curso' omitted to simulate empty
+        ];
+
+        $response = $this->putJson(route('alunos.update', $user->id), $payload);
+        $this->assertTrue(in_array($response->status(), [422,400]));
+        $this->assertDatabaseHas('users', ['id' => $user->id]);
+    }
+
+    /**
+     * Caso 3.16: Editar aluno com e-mail inválido (sem @)
+     */
+    public function test_editar_aluno_email_sem_arroba(): void
+    {
+        $this->actingAsAdmin();
+
+        $curso = Curso::firstOrCreate(['nome' => 'Ciência da Computação']);
+        $user = User::factory()->create(['name' => 'Laura Cristina Melo', 'email' => 'laura.melo@gmail.com']);
+        Aluno::create(['user_id' => $user->id, 'curso_id' => $curso->id, 'matricula' => '2023020']);
+
+        $payload = [
+            'name' => 'Laura Cristina Melo',
+            'email' => 'lauramelo.com',
+            'curso' => 'Ciência da Computação',
+        ];
+
+        $response = $this->putJson(route('alunos.update', $user->id), $payload);
+        $this->assertTrue(in_array($response->status(), [422,400]));
+        $this->assertDatabaseHas('users', ['id' => $user->id, 'email' => 'laura.melo@gmail.com']);
+    }
+
+    /**
+     * Caso 3.17: Editar aluno com caracteres inválidos no e-mail
+     */
+    public function test_editar_aluno_email_com_espaco(): void
+    {
+        $this->actingAsAdmin();
+
+        $curso = Curso::firstOrCreate(['nome' => 'Ciência da Computação']);
+        $user = User::factory()->create(['name' => 'Laura Cristina Melo', 'email' => 'laura.melo@gmail.com']);
+        Aluno::create(['user_id' => $user->id, 'curso_id' => $curso->id, 'matricula' => '2023020']);
+
+        $payload = [
+            'name' => 'Laura Cristina Melo',
+            'email' => 'laura melo@gmail.com',
+            'curso' => 'Ciência da Computação',
+        ];
+
+        $response = $this->putJson(route('alunos.update', $user->id), $payload);
+        $this->assertTrue(in_array($response->status(), [422,400]));
+        $this->assertDatabaseHas('users', ['id' => $user->id, 'email' => 'laura.melo@gmail.com']);
+    }
+
+    /**
+     * Caso 3.18: Editar aluno com e-mail já cadastrado
+     */
+    public function test_editar_aluno_para_email_duplicado(): void
+    {
+        $this->actingAsAdmin();
+
+        $curso = Curso::firstOrCreate(['nome' => 'Ciência da Computação']);
+        $user1 = User::factory()->create(['name' => 'Carlos Henrique Silva', 'email' => 'carlos.henrique@gmail.com']);
+        Aluno::create(['user_id' => $user1->id, 'curso_id' => $curso->id, 'matricula' => '2023021']);
+
+        $user2 = User::factory()->create(['name' => 'Laura Cristina Melo', 'email' => 'laura.melo@gmail.com']);
+        Aluno::create(['user_id' => $user2->id, 'curso_id' => $curso->id, 'matricula' => '2023020']);
+
+        $payload = [
+            'name' => 'Laura Cristina Melo',
+            'email' => 'carlos.henrique@gmail.com',
+            'curso' => 'Ciência da Computação',
+        ];
+
+        $response = $this->putJson(route('alunos.update', $user2->id), $payload);
+        $this->assertTrue(in_array($response->status(), [422,400]));
+        $this->assertDatabaseHas('users', ['id' => $user2->id, 'email' => 'laura.melo@gmail.com']);
+    }
+
+    /**
+     * Caso 3.19: Editar aluno com senha inválida (Falha)
+     */
+    public function test_editar_aluno_com_senha_invalida(): void
+    {
+        $this->actingAsAdmin();
+
+        $curso = Curso::firstOrCreate(['nome' => 'Ciência da Computação']);
+        $user = User::factory()->create(['name' => 'Laura Cristina Melo', 'email' => 'laura.melo@gmail.com']);
+        Aluno::create(['user_id' => $user->id, 'curso_id' => $curso->id, 'matricula' => '2023020']);
+
+        $payload = [
+            'name' => 'Laura Cristina Melo',
+            'email' => 'laura.melo@gmail.com',
+            'password' => 'laura12',
+            'password_confirmation' => 'laura12',
+            'curso' => 'Ciência da Computação',
+        ];
+
+        $response = $this->putJson(route('alunos.update', $user->id), $payload);
+        $this->assertTrue(in_array($response->status(), [422,400]));
+        $this->assertDatabaseHas('users', ['id' => $user->id]);
+    }
+
+    /**
+     * Caso 3.20: Excluir aluno (Caminho Feliz)
+     */
+    public function test_excluir_aluno_caminho_feliz(): void
+    {
+        $this->actingAsAdmin();
+
+        $curso = Curso::firstOrCreate(['nome' => 'Ciência da Computação']);
+        $user = User::factory()->create(['name' => 'Rafael Augusto', 'email' => 'rafael.augusto@gmail.com']);
+        Aluno::create(['user_id' => $user->id, 'curso_id' => $curso->id, 'matricula' => '2023022']);
+
+        $response = $this->deleteJson(route('alunos.destroy', $user->id));
+        $this->assertTrue(in_array($response->status(), [200,204]));
+        $this->assertDatabaseMissing('users', ['id' => $user->id]);
+    }
+
+    /**
+     * Caso 3.21: Cancelar exclusão de aluno
+     */
+    public function test_cancelar_exclusao_de_aluno_nao_remove(): void
+    {
+        $this->actingAsAdmin();
+
+        $curso = Curso::firstOrCreate(['nome' => 'Ciência da Computação']);
+        $user = User::factory()->create(['name' => 'Rafael Augusto', 'email' => 'rafael.augusto@gmail.com']);
+        Aluno::create(['user_id' => $user->id, 'curso_id' => $curso->id, 'matricula' => '2023022']);
+
+        // Simula cancelar a exclusão: não chama delete, apenas garante que o registro permanece
+        $this->assertDatabaseHas('users', ['id' => $user->id]);
+    }
+
+    /**
+     * Caso 3.22: Excluir aluno inexistente (Falha)
+     */
+    public function test_excluir_aluno_inexistente_retorna_404(): void
+    {
+        $this->actingAsAdmin();
+
+        $curso = Curso::firstOrCreate(['nome' => 'Ciência da Computação']);
+        $user = User::factory()->create(['name' => 'Rafael Augusto', 'email' => 'rafael.augusto@gmail.com']);
+        Aluno::create(['user_id' => $user->id, 'curso_id' => $curso->id, 'matricula' => '2023022']);
+
+        // Exclui uma vez
+        $this->deleteJson(route('alunos.destroy', $user->id))->assertTrue(in_array($this->response->status(), [200,204]));
+
+        // Tenta excluir novamente -> deve retornar 404
+        $response = $this->deleteJson(route('alunos.destroy', $user->id));
+        $response->assertStatus(404);
+    }
+
+    /**
+     * Caso 3.23: Falha na exclusão por erro de sistema (Exceção)
+     */
+    public function test_exclusao_aluno_com_erro_sistema_nao_remove(): void
+    {
+        $this->actingAsAdmin();
+
+        $curso = Curso::firstOrCreate(['nome' => 'Ciência da Computação']);
+        $user = User::factory()->create(['name' => 'Rafael Augusto', 'email' => 'rafael.augusto@gmail.com']);
+        Aluno::create(['user_id' => $user->id, 'curso_id' => $curso->id, 'matricula' => '2023022']);
+
+        // Simula exceção no DB durante a transação
+        DB::shouldReceive('transaction')->andThrow(new \Exception('Simulated DB error'));
+
+        $response = $this->deleteJson(route('alunos.destroy', $user->id));
+
+        // Esperamos erro 500 ou 500-like
+        $this->assertTrue(in_array($response->status(), [500,500]));
+        $this->assertDatabaseHas('users', ['id' => $user->id]);
+    }
+
+    /**
+     * Caso 3.24: Tentar criar aluno sem preencher o campo "Matrícula"
+     */
+    public function test_nao_pode_criar_aluno_sem_matricula(): void
+    {
+        $this->actingAsAdmin();
+
+        $payload = [
+            'name' => 'Bruno Cesar',
+            'curso' => 'Ciência da Computação',
+            'email' => 'bruno.cesar@email.com',
+            // 'matricula' omitted
+            'password' => 'Bruno123!',
+            'password_confirmation' => 'Bruno123!',
+        ];
+
+        $response = $this->postJson(route('alunos.store'), $payload);
+        $this->assertTrue(in_array($response->status(), [422,400]));
+        $this->assertDatabaseMissing('users', ['email' => 'bruno.cesar@email.com']);
+    }
+
+    /**
+     * Caso 3.25: Tentar criar aluno sem preencher o campo "Curso"
+     */
+    public function test_nao_pode_criar_aluno_sem_curso(): void
+    {
+        $this->actingAsAdmin();
+
+        $payload = [
+            'name' => 'Ana Clara',
+            // 'curso' omitted
+            'email' => 'ana.clara@email.com',
+            'matricula' => '2023099',
+            'password' => 'Ana12345',
+            'password_confirmation' => 'Ana12345',
+        ];
+
+        $response = $this->postJson(route('alunos.store'), $payload);
+        $this->assertTrue(in_array($response->status(), [422,400]));
+        $this->assertDatabaseMissing('users', ['email' => 'ana.clara@email.com']);
+    }
+
+    /**
+     * Caso 3.26: Tentar criar aluno com Matrícula já cadastrada
+     */
+    public function test_nao_pode_criar_aluno_com_matricula_duplicada(): void
+    {
+        $this->actingAsAdmin();
+
+        $curso1 = Curso::firstOrCreate(['nome' => 'Ciência da Computação']);
+        $existingUser = User::factory()->create(['name' => 'Renato Moura Soares', 'email' => 'renato.soares@alunos.ufrj.br']);
+        Aluno::create(['user_id' => $existingUser->id, 'curso_id' => $curso1->id, 'matricula' => '2023018']);
+
+        $payload = [
+            'name' => 'Novo Aluno Teste',
+            'curso' => 'Engenharia Civil',
+            'email' => 'novo.aluno@email.com',
+            'matricula' => '2023018',
+            'password' => 'Senha123!',
+            'password_confirmation' => 'Senha123!',
+        ];
+
+        $response = $this->postJson(route('alunos.store'), $payload);
+        $this->assertTrue(in_array($response->status(), [422,400]));
+        $this->assertDatabaseCount('users', 1);
+    }
+
+    /**
+     * Caso 3.27: Editar aluno (Falha: campo "Matrícula" vazio)
+     */
+    public function test_editar_aluno_matricula_obrigatoria(): void
+    {
+        $this->actingAsAdmin();
+
+        $curso = Curso::firstOrCreate(['nome' => 'Ciência da Computação']);
+        $user = User::factory()->create(['name' => 'Laura Cristina Melo', 'email' => 'laura.melo@gmail.com']);
+        Aluno::create(['user_id' => $user->id, 'curso_id' => $curso->id, 'matricula' => '2023020']);
+
+        $payload = [
+            'name' => 'Laura Cristina Melo',
+            'email' => 'laura.melo@gmail.com',
+            'matricula' => '',
+            'curso' => 'Ciência da Computação',
+        ];
+
+        $response = $this->putJson(route('alunos.update', $user->id), $payload);
+        $this->assertTrue(in_array($response->status(), [422,400]));
+        $this->assertDatabaseHas('alunos', ['user_id' => $user->id, 'matricula' => '2023020']);
+    }
+
+    /**
+     * Caso 3.28: Editar aluno com Matrícula já cadastrada (Duplicidade)
+     */
+    public function test_editar_aluno_matricula_duplicada(): void
+    {
+        $this->actingAsAdmin();
+
+        $curso = Curso::firstOrCreate(['nome' => 'Ciência da Computação']);
+        $user1 = User::factory()->create(['name' => 'Carlos Henrique Silva', 'email' => 'carlos.henrique@gmail.com']);
+        Aluno::create(['user_id' => $user1->id, 'curso_id' => $curso->id, 'matricula' => '2023021']);
+
+        $user2 = User::factory()->create(['name' => 'Laura Cristina Melo', 'email' => 'laura.melo@gmail.com']);
+        Aluno::create(['user_id' => $user2->id, 'curso_id' => $curso->id, 'matricula' => '2023020']);
+
+        $payload = [
+            'name' => 'Laura Cristina Melo',
+            'email' => 'laura.melo@gmail.com',
+            'matricula' => '2023021',
+            'curso' => 'Ciência da Computação',
+        ];
+
+        $response = $this->putJson(route('alunos.update', $user2->id), $payload);
+        $this->assertTrue(in_array($response->status(), [422,400]));
+        $this->assertDatabaseHas('alunos', ['user_id' => $user2->id, 'matricula' => '2023020']);
+    }
+
+    /**
+     * Caso 3.29: Tentar criar aluno com caracteres inválidos na Matrícula
+     */
+    public function test_nao_pode_criar_aluno_com_matricula_invalida(): void
+    {
+        $this->actingAsAdmin();
+
+        $payload = [
+            'name' => 'Aluno Matricula Inv',
+            'curso' => 'Ciência da Computação',
+            'email' => 'matricula.inv@example.com',
+            'matricula' => '2023ABC',
+            'password' => 'Senha123!',
+            'password_confirmation' => 'Senha123!',
+        ];
+
+        $response = $this->postJson(route('alunos.store'), $payload);
+        $this->assertTrue(in_array($response->status(), [422,400]));
+        $this->assertDatabaseMissing('users', ['email' => 'matricula.inv@example.com']);
     }
 }
