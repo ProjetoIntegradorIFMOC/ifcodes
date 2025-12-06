@@ -9,6 +9,8 @@ use App\Models\User;
 use App\Models\Professor;
 use Spatie\Permission\Models\Role;
 use Laravel\Sanctum\Sanctum;
+use Illuminate\Support\Facades\DB;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class GerenciarProfessorTest extends TestCase
 {
@@ -406,5 +408,321 @@ class GerenciarProfessorTest extends TestCase
         $this->assertDatabaseMissing('users', [
             'email' => 'mariaaparecida@gmail.com',
         ]);
+    }
+
+
+    /**
+     * @test
+     * Caso 1.13: Editar Professor (Falha: campo "Nome" vazio)
+     */
+    public function admin_nao_pode_editar_professor_sem_nome(): void
+    {
+        $this->createAndActAsAdmin();
+
+        $professor = $this->createProfessor('Maria Aparecida', 'mariaaparecida@gmail.com', 'Ciência da Computação');
+
+        $payload = [
+            'name' => '',
+            'email' => 'mariaaparecida@gmail.com',
+            'area_atuacao' => 'Ciência da Computação',
+        ];
+
+        $response = $this->putJson(route('professores.update', $professor->id), $payload);
+
+        $response->assertStatus(422)
+                 ->assertJsonValidationErrors(['name']);
+
+        // Dados permanecem inalterados no banco
+        $this->assertDatabaseHas('users', [
+            'id' => $professor->id,
+            'name' => 'Maria Aparecida',
+            'email' => 'mariaaparecida@gmail.com',
+        ]);
+
+        $this->assertDatabaseHas('professor', [
+            'id' => $professor->id,
+            'area_atuacao' => 'Ciência da Computação',
+        ]);
+    }
+
+
+    /**
+     * @test
+     * Caso 1.14: Editar Professor (Falha: campo "E-mail" vazio)
+     */
+    public function admin_nao_pode_editar_professor_sem_email(): void
+    {
+        $this->createAndActAsAdmin();
+
+        $professor = $this->createProfessor('Maria Aparecida', 'mariaaparecida@gmail.com', 'Ciência da Computação');
+
+        $payload = [
+            'name' => 'Maria Aparecida',
+            'email' => '',
+            'area_atuacao' => 'Ciência da Computação',
+        ];
+
+        $response = $this->putJson(route('professores.update', $professor->id), $payload);
+
+        $response->assertStatus(422)
+                 ->assertJsonValidationErrors(['email']);
+
+        $this->assertDatabaseHas('users', [
+            'id' => $professor->id,
+            'name' => 'Maria Aparecida',
+            'email' => 'mariaaparecida@gmail.com',
+        ]);
+
+        $this->assertDatabaseHas('professor', [
+            'id' => $professor->id,
+            'area_atuacao' => 'Ciência da Computação',
+        ]);
+    }
+
+
+    /**
+     * @test
+     * Caso 1.15: Editar Professor (Falha: campo "Área de Atuação" vazio)
+     */
+    public function admin_nao_pode_editar_professor_sem_area_atuacao(): void
+    {
+        $this->createAndActAsAdmin();
+
+        $professor = $this->createProfessor('Maria Aparecida', 'mariaaparecida@gmail.com', 'Ciência da Computação');
+
+        $payload = [
+            'name' => 'Maria Aparecida',
+            'email' => 'mariaaparecida@gmail.com',
+            'area_atuacao' => '',
+        ];
+
+        $response = $this->putJson(route('professores.update', $professor->id), $payload);
+
+        $response->assertStatus(422)
+                 ->assertJsonValidationErrors(['area_atuacao']);
+
+        $this->assertDatabaseHas('users', [
+            'id' => $professor->id,
+            'name' => 'Maria Aparecida',
+            'email' => 'mariaaparecida@gmail.com',
+        ]);
+
+        $this->assertDatabaseHas('professor', [
+            'id' => $professor->id,
+            'area_atuacao' => 'Ciência da Computação',
+        ]);
+    }
+
+
+    /**
+     * @test
+     * Caso 1.16: Tentar editar com um formato de e-mail inválido (Falha)
+     */
+    public function admin_nao_pode_editar_professor_com_email_invalido(): void
+    {
+        $this->createAndActAsAdmin();
+
+        $professor = $this->createProfessor('Maria Aparecida', 'mariaaparecida@gmail.com', 'Ciência da Computação');
+
+        $payload = [
+            'name' => 'Maria Aparecida',
+            'email' => 'mariaaparecida.com', // sem @
+            'area_atuacao' => 'Ciência da Computação',
+        ];
+
+        $response = $this->putJson(route('professores.update', $professor->id), $payload);
+
+        $response->assertStatus(422)
+                 ->assertJsonValidationErrors(['email']);
+
+        $this->assertDatabaseHas('users', [
+            'id' => $professor->id,
+            'email' => 'mariaaparecida@gmail.com',
+        ]);
+    }
+
+
+    /**
+     * @test
+     * Caso 1.17: E-mail com caracteres especiais inválidos (Falha)
+     */
+    public function admin_nao_pode_editar_professor_com_email_com_espacos_ou_caracteres_invalidos(): void
+    {
+        $this->createAndActAsAdmin();
+
+        $professor = $this->createProfessor('Maria Aparecida', 'mariaaparecida@gmail.com', 'Ciência da Computação');
+
+        $payload = [
+            'name' => 'Maria Aparecida',
+            'email' => 'maria aparececida.com', // espaço e falta de @
+            'area_atuacao' => 'Ciência da Computação',
+        ];
+
+        $response = $this->putJson(route('professores.update', $professor->id), $payload);
+
+        $response->assertStatus(422)
+                 ->assertJsonValidationErrors(['email']);
+
+        $this->assertDatabaseHas('users', [
+            'id' => $professor->id,
+            'email' => 'mariaaparecida@gmail.com',
+        ]);
+    }
+
+
+    /**
+     * @test
+     * Caso 1.18: Editar professor com e-mail já cadastrado (Falha)
+     */
+    public function admin_nao_pode_editar_professor_com_email_ja_cadastrado(): void
+    {
+        $this->createAndActAsAdmin();
+
+        // Outro professor já cadastrado
+        $this->createProfessor('Professor X', 'professorx@gmail.com', 'Matemática');
+
+        // Professora a ser editada
+        $professor = $this->createProfessor('Maria Aparecida', 'mariaaparecida@gmail.com', 'Ciência da Computação');
+
+        $payload = [
+            'name' => 'Maria Aparecida',
+            'email' => 'professorx@gmail.com', // duplicado
+            'area_atuacao' => 'Ciência da Computação',
+        ];
+
+        $response = $this->putJson(route('professores.update', $professor->id), $payload);
+
+        $response->assertStatus(422)
+                 ->assertJsonValidationErrors(['email']);
+
+        // Verifica que os dados da Maria permanecem inalterados
+        $this->assertDatabaseHas('users', [
+            'id' => $professor->id,
+            'email' => 'mariaaparecida@gmail.com',
+        ]);
+    }
+
+
+    /**
+     * @test
+     * Caso 1.19: Editar Professor com um formato de senha inválido (Falha)
+     */
+    public function admin_nao_pode_editar_professor_com_senha_invalida(): void
+    {
+        $this->createAndActAsAdmin();
+
+        $professor = $this->createProfessor('Maria Aparecida', 'mariaaparecida@gmail.com', 'Ciência da Computação');
+
+        $payload = [
+            'name' => 'Maria Aparecida',
+            'email' => 'mariaaparecida@gmail.com',
+            'password' => 'maria12', // menos de 8 caracteres
+            'password_confirmation' => 'maria12',
+            'area_atuacao' => 'Ciência da Computação',
+        ];
+
+        $response = $this->putJson(route('professores.update', $professor->id), $payload);
+
+        $response->assertStatus(422)
+                 ->assertJsonValidationErrors(['password']);
+
+        // Verifica que os dados permanecem inalterados
+        $this->assertDatabaseHas('users', [
+            'id' => $professor->id,
+            'email' => 'mariaaparecida@gmail.com',
+        ]);
+    }
+
+
+    /**
+     * @test
+     * Caso 1.20: Excluir professor (Caminho Feliz)
+     */
+    public function admin_pode_excluir_professor_caminho_feliz(): void
+    {
+        $this->createAndActAsAdmin();
+
+        $professor = $this->createProfessor('Douglas Sena', 'douglassena@gmail.com', 'Ciência da Computação');
+
+        $response = $this->deleteJson(route('professores.destroy', $professor->id));
+
+        $response->assertSuccessful();
+
+        // Registros devem ser removidos (ou não visíveis)
+        $this->assertDatabaseMissing('users', ['email' => 'douglassena@gmail.com']);
+        $this->assertDatabaseMissing('professor', ['id' => $professor->id]);
+    }
+
+
+    /**
+     * @test
+     * Caso 1.21: Cancelar exclusão de professor
+     */
+    public function admin_pode_cancelar_exclusao_professor(): void
+    {
+        $this->createAndActAsAdmin();
+
+        $professor = $this->createProfessor('Douglas Sena', 'douglassena@gmail.com', 'Ciência da Computação');
+
+        // Simula cancelar a exclusão: nenhuma chamada DELETE é feita.
+        // Verifica que o professor permanece no banco de dados.
+        $this->assertDatabaseHas('users', ['email' => 'douglassena@gmail.com']);
+        $this->assertDatabaseHas('professor', ['id' => $professor->id]);
+    }
+
+
+    /**
+     * @test
+     * Caso 1.22: Excluir professor inexistente (Falha)
+     */
+    public function admin_nao_pode_excluir_professor_inexistente(): void
+    {
+        $this->createAndActAsAdmin();
+
+        $professor = $this->createProfessor('Douglas Sena', 'douglassena@gmail.com', 'Ciência da Computação');
+
+        // Primeiro exclui com sucesso
+        $first = $this->deleteJson(route('professores.destroy', $professor->id));
+        $first->assertSuccessful();
+
+        // Tenta excluir novamente (já removido)
+        $second = $this->deleteJson(route('professores.destroy', $professor->id));
+
+        // Espera 404 Not Found (registro já removido)
+        $second->assertStatus(404);
+
+        // Garante que o banco continua sem o registro
+        $this->assertDatabaseMissing('users', ['email' => 'douglassena@gmail.com']);
+    }
+
+
+    /**
+     * @test
+     * Caso 1.23: Falha na exclusão por erro de sistema (Exceção)
+     */
+    public function admin_nao_pode_excluir_professor_por_erro_de_sistema(): void
+    {
+        $this->createAndActAsAdmin();
+
+        $professor = $this->createProfessor('Douglas Sena', 'douglassena@gmail.com', 'Ciência da Computação');
+        // Preserva a instância real do DB para restaurar após o mock
+        $originalDb = DB::getFacadeRoot();
+
+        // Simula uma falha técnica forçando o DB::transaction a lançar uma exceção
+        DB::shouldReceive('transaction')
+            ->once()
+            ->andThrow(new HttpException(500, 'Não foi possível excluir o professor. Tente novamente mais tarde.'));
+
+        $response = $this->deleteJson(route('professores.destroy', $professor->id));
+
+        // Restaura o DB original antes de executar asserções que usam o banco
+        DB::swap($originalDb);
+
+        $response->assertStatus(500)
+                 ->assertJsonFragment(['message' => 'Não foi possível excluir o professor. Tente novamente mais tarde.']);
+
+        // Garante que nenhum dado foi perdido
+        $this->assertDatabaseHas('users', ['email' => 'douglassena@gmail.com']);
+        $this->assertDatabaseHas('professor', ['id' => $professor->id]);
     }
 }
