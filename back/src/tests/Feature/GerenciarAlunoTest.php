@@ -21,6 +21,7 @@ class GerenciarAlunoTest extends TestCase
         parent::setUp();
         Role::firstOrCreate(['name' => 'admin'], ['guard_name' => 'web']);
         Role::firstOrCreate(['name' => 'professor'], ['guard_name' => 'web']);
+        Role::firstOrCreate(['name' => 'student'], ['guard_name' => 'web']);
     }
 
     // Cria e loga admin
@@ -39,9 +40,11 @@ class GerenciarAlunoTest extends TestCase
     {
         $this->actingAsAdmin();
 
+        $curso = Curso::firstOrCreate(['nome' => 'Ciência da Computação']);
+
         $payload = [
             'name' => 'Carla Mendes Silva',
-            'curso' => 'Ciência da Computação',
+            'curso_id' => $curso->id,
             'email' => 'carla.mendes@gmail.com',
             'matricula' => '2023010',
             'password' => 'carlaMS2025',
@@ -50,7 +53,7 @@ class GerenciarAlunoTest extends TestCase
 
         $response = $this->postJson(route('alunos.store'), $payload);
 
-        $this->assertTrue(in_array($response->status(), [200,201]));
+        $this->assertTrue(in_array($response->status(), [200,201]), 'Response status: '.$response->status()."; Body: ".substr($response->getContent(), 0, 1000));
         $this->assertDatabaseHas('users', ['email' => 'carla.mendes@gmail.com', 'name' => 'Carla Mendes Silva']);
     }
 
@@ -61,9 +64,11 @@ class GerenciarAlunoTest extends TestCase
     {
         $this->actingAsAdmin();
 
+        $curso = Curso::firstOrCreate(['nome' => 'Ciência da Computação']);
+
         $payload = [
             // 'name' omitted
-            'curso' => 'Ciência da Computação',
+            'curso_id' => $curso->id,
             'email' => 'gustavo.araujo@gmail.com',
             'matricula' => '2023011',
             'password' => 'Gustavo123!',
@@ -83,9 +88,11 @@ class GerenciarAlunoTest extends TestCase
     {
         $this->actingAsAdmin();
 
+        $curso = Curso::firstOrCreate(['nome' => 'Ciência da Computação']);
+
         $payload = [
             'name' => 'Juliana Ribeiro Duarte',
-            'curso' => 'Ciência da Computação',
+            'curso_id' => $curso->id,
             // 'email' omitted
             'matricula' => '2023012',
             'password' => 'julianaRD88',
@@ -105,9 +112,11 @@ class GerenciarAlunoTest extends TestCase
     {
         $this->actingAsAdmin();
 
+        $curso = Curso::firstOrCreate(['nome' => 'Ciência da Computação']);
+
         $payload = [
             'name' => 'Mateus Oliveira Neri',
-            'curso' => 'Ciência da Computação',
+            'curso_id' => $curso->id,
             'email' => 'mateus.neri@unigran.edu',
             'matricula' => '2023013',
             'password' => '',
@@ -127,9 +136,11 @@ class GerenciarAlunoTest extends TestCase
     {
         $this->actingAsAdmin();
 
+        $curso = Curso::firstOrCreate(['nome' => 'Ciência da Computação']);
+
         $payload = [
             'name' => 'Eduarda Nascimento Freire',
-            'curso' => 'Ciência da Computação',
+            'curso_id' => $curso->id,
             'email' => 'eduarda.freire@aluno.unit.br',
             'matricula' => '2023014',
             'password' => 'Duda2025',
@@ -149,9 +160,11 @@ class GerenciarAlunoTest extends TestCase
     {
         $this->actingAsAdmin();
 
+        $curso = Curso::firstOrCreate(['nome' => 'Ciência da Computação']);
+
         $payload = [
             'name' => 'Henrique Vasconcelos Prado',
-            'curso' => 'Ciência da Computação',
+            'curso_id' => $curso->id,
             'email' => 'henrique.vprado@uniesp.com',
             'matricula' => '2023015',
             'password' => 'HenriqueVP90',
@@ -171,9 +184,11 @@ class GerenciarAlunoTest extends TestCase
     {
         $this->actingAsAdmin();
 
+        $curso = Curso::firstOrCreate(['nome' => 'Ciência da Computação']);
+
         $payload = [
             'name' => 'Sabrina Torres Matias',
-            'curso' => 'Ciência da Computação',
+            'curso_id' => $curso->id,
             'email' => 'email.incorreto',
             'matricula' => '2023016',
             'password' => 'SabrinaTm55',
@@ -193,9 +208,11 @@ class GerenciarAlunoTest extends TestCase
     {
         $this->actingAsAdmin();
 
+        $curso = Curso::firstOrCreate(['nome' => 'Ciência da Computação']);
+
         $payload = [
             'name' => 'Tiago Almeida Monteiro',
-            'curso' => 'Ciência da Computação',
+            'curso_id' => $curso->id,
             'email' => 'tiago.monteiro@ifce.edu.br',
             'matricula' => '2023017',
             'password' => '12345',
@@ -224,10 +241,12 @@ class GerenciarAlunoTest extends TestCase
         ]);
         Aluno::create(['user_id' => $existingUser->id, 'curso_id' => $curso->id, 'matricula' => '2023018']);
 
+
         // tentativa de duplicidade
+        $curso2 = Curso::firstOrCreate(['nome' => 'Ciências Biológicas']);
         $payload = [
             'name' => 'Renato Soares',
-            'curso' => 'Ciências Biológicas',
+            'curso_id' => $curso2->id,
             'email' => 'renato.soares@alunos.ufrj.br',
             'matricula' => '2023018',
             'password' => 'Renato2025',
@@ -236,9 +255,10 @@ class GerenciarAlunoTest extends TestCase
 
         $response = $this->postJson(route('alunos.store'), $payload);
 
-        $this->assertTrue(in_array($response->status(), [422,400]));
+        $this->assertTrue(in_array($response->status(), [422,400]), 'Response status: '.$response->status()."; Body: ".substr($response->getContent(),0,1000));
         // garante que não foi criado um segundo usuário com esse email
-        $this->assertDatabaseCount('users', 1);
+        $this->assertDatabaseHas('users', ['email' => 'renato.soares@alunos.ufrj.br']);
+        $this->assertEquals(1, DB::table('users')->where('email', 'renato.soares@alunos.ufrj.br')->count(), 'Users with that email: '.json_encode(DB::table('users')->where('email','renato.soares@alunos.ufrj.br')->get()));
     }
 
     /**
@@ -278,12 +298,13 @@ class GerenciarAlunoTest extends TestCase
         $user = User::factory()->create(['name' => 'Laura Cristina Melo', 'email' => 'laura.melo@gmail.com']);
         Aluno::create(['user_id' => $user->id, 'curso_id' => $curso->id, 'matricula' => '2023020']);
 
+
         $payload = [
             'name' => 'Laura Cristina Melo Silva',
             'email' => 'laura.melo.silva@gmail.com',
             'password' => 'lauracms2025',
             'password_confirmation' => 'lauracms2025',
-            'curso' => 'Ciência da Computação',
+            'curso_id' => $curso->id,
         ];
 
         $response = $this->putJson(route('alunos.update', $user->id), $payload);
@@ -306,7 +327,7 @@ class GerenciarAlunoTest extends TestCase
         $payload = [
             'name' => '',
             'email' => 'laura.melo@gmail.com',
-            'curso' => 'Ciência da Computação',
+            'curso_id' => $curso->id,
         ];
 
         $response = $this->putJson(route('alunos.update', $user->id), $payload);
@@ -330,11 +351,11 @@ class GerenciarAlunoTest extends TestCase
         $payload = [
             'name' => 'Laura Cristina Melo',
             'email' => '',
-            'curso' => 'Ciência da Computação',
+            'curso_id' => $curso->id,
         ];
 
         $response = $this->putJson(route('alunos.update', $user->id), $payload);
-        $this->assertTrue(in_array($response->status(), [422,400]));
+        $this->assertTrue(in_array($response->status(), [422,400]), 'Response status: '.$response->status()."; Body: ".substr($response->getContent(),0,1000));
         $this->assertDatabaseHas('users', ['id' => $user->id, 'email' => 'laura.melo@gmail.com']);
     }
 
@@ -352,11 +373,12 @@ class GerenciarAlunoTest extends TestCase
         $payload = [
             'name' => 'Laura Cristina Melo',
             'email' => 'laura.melo@gmail.com',
-            // 'curso' omitted to simulate empty
+            // simulate empty curso: send empty curso_id so validation triggers
+            'curso_id' => '',
         ];
 
         $response = $this->putJson(route('alunos.update', $user->id), $payload);
-        $this->assertTrue(in_array($response->status(), [422,400]));
+        $this->assertTrue(in_array($response->status(), [422,400]), 'Response status: '.$response->status()."; Body: ".substr($response->getContent(),0,1000));
         $this->assertDatabaseHas('users', ['id' => $user->id]);
     }
 
@@ -374,7 +396,7 @@ class GerenciarAlunoTest extends TestCase
         $payload = [
             'name' => 'Laura Cristina Melo',
             'email' => 'lauramelo.com',
-            'curso' => 'Ciência da Computação',
+            'curso_id' => $curso->id,
         ];
 
         $response = $this->putJson(route('alunos.update', $user->id), $payload);
@@ -421,7 +443,7 @@ class GerenciarAlunoTest extends TestCase
         $payload = [
             'name' => 'Laura Cristina Melo',
             'email' => 'carlos.henrique@gmail.com',
-            'curso' => 'Ciência da Computação',
+            'curso_id' => $curso->id,
         ];
 
         $response = $this->putJson(route('alunos.update', $user2->id), $payload);
@@ -445,7 +467,7 @@ class GerenciarAlunoTest extends TestCase
             'email' => 'laura.melo@gmail.com',
             'password' => 'laura12',
             'password_confirmation' => 'laura12',
-            'curso' => 'Ciência da Computação',
+            'curso_id' => $curso->id,
         ];
 
         $response = $this->putJson(route('alunos.update', $user->id), $payload);
@@ -496,7 +518,8 @@ class GerenciarAlunoTest extends TestCase
         Aluno::create(['user_id' => $user->id, 'curso_id' => $curso->id, 'matricula' => '2023022']);
 
         // Exclui uma vez
-        $this->deleteJson(route('alunos.destroy', $user->id))->assertTrue(in_array($this->response->status(), [200,204]));
+        $firstDelete = $this->deleteJson(route('alunos.destroy', $user->id));
+        $this->assertTrue(in_array($firstDelete->status(), [200,204]));
 
         // Tenta excluir novamente -> deve retornar 404
         $response = $this->deleteJson(route('alunos.destroy', $user->id));
@@ -515,9 +538,13 @@ class GerenciarAlunoTest extends TestCase
         Aluno::create(['user_id' => $user->id, 'curso_id' => $curso->id, 'matricula' => '2023022']);
 
         // Simula exceção no DB durante a transação
+        $originalDb = DB::getFacadeRoot();
         DB::shouldReceive('transaction')->andThrow(new \Exception('Simulated DB error'));
 
         $response = $this->deleteJson(route('alunos.destroy', $user->id));
+
+        // restaura o DB facade para usar assertDatabaseHas
+        DB::swap($originalDb);
 
         // Esperamos erro 500 ou 500-like
         $this->assertTrue(in_array($response->status(), [500,500]));
@@ -531,9 +558,11 @@ class GerenciarAlunoTest extends TestCase
     {
         $this->actingAsAdmin();
 
+        $curso = Curso::firstOrCreate(['nome' => 'Ciência da Computação']);
+
         $payload = [
             'name' => 'Bruno Cesar',
-            'curso' => 'Ciência da Computação',
+            'curso_id' => $curso->id,
             'email' => 'bruno.cesar@email.com',
             // 'matricula' omitted
             'password' => 'Bruno123!',
@@ -541,7 +570,7 @@ class GerenciarAlunoTest extends TestCase
         ];
 
         $response = $this->postJson(route('alunos.store'), $payload);
-        $this->assertTrue(in_array($response->status(), [422,400]));
+        $this->assertTrue(in_array($response->status(), [422,400]), 'Response status: '.$response->status()."; Body: ".substr($response->getContent(),0,1000));
         $this->assertDatabaseMissing('users', ['email' => 'bruno.cesar@email.com']);
     }
 
@@ -577,9 +606,12 @@ class GerenciarAlunoTest extends TestCase
         $existingUser = User::factory()->create(['name' => 'Renato Moura Soares', 'email' => 'renato.soares@alunos.ufrj.br']);
         Aluno::create(['user_id' => $existingUser->id, 'curso_id' => $curso1->id, 'matricula' => '2023018']);
 
+
+        $curso2 = Curso::firstOrCreate(['nome' => 'Engenharia Civil']);
+
         $payload = [
             'name' => 'Novo Aluno Teste',
-            'curso' => 'Engenharia Civil',
+            'curso_id' => $curso2->id,
             'email' => 'novo.aluno@email.com',
             'matricula' => '2023018',
             'password' => 'Senha123!',
@@ -588,7 +620,8 @@ class GerenciarAlunoTest extends TestCase
 
         $response = $this->postJson(route('alunos.store'), $payload);
         $this->assertTrue(in_array($response->status(), [422,400]));
-        $this->assertDatabaseCount('users', 1);
+        // garante que não foi criado o novo usuário com este email
+        $this->assertDatabaseMissing('users', ['email' => 'novo.aluno@email.com']);
     }
 
     /**
@@ -606,11 +639,21 @@ class GerenciarAlunoTest extends TestCase
             'name' => 'Laura Cristina Melo',
             'email' => 'laura.melo@gmail.com',
             'matricula' => '',
-            'curso' => 'Ciência da Computação',
+            'curso_id' => $curso->id,
         ];
 
         $response = $this->putJson(route('alunos.update', $user->id), $payload);
-        $this->assertTrue(in_array($response->status(), [422,400]));
+
+        // debug: capture DB rows for diagnostics
+        $dbUser = DB::table('users')->where('id', $user->id)->first();
+        $dbAluno = DB::table('alunos')->where('user_id', $user->id)->first();
+
+        $this->assertTrue(
+            in_array($response->status(), [422,400]),
+            'Response status: '.$response->status()."; Body: ".substr($response->getContent(),0,1000).
+            "; DB user: ".json_encode($dbUser)."; DB aluno: ".json_encode($dbAluno)
+        );
+
         $this->assertDatabaseHas('alunos', ['user_id' => $user->id, 'matricula' => '2023020']);
     }
 
@@ -632,7 +675,7 @@ class GerenciarAlunoTest extends TestCase
             'name' => 'Laura Cristina Melo',
             'email' => 'laura.melo@gmail.com',
             'matricula' => '2023021',
-            'curso' => 'Ciência da Computação',
+            'curso_id' => $curso->id,
         ];
 
         $response = $this->putJson(route('alunos.update', $user2->id), $payload);
@@ -647,9 +690,12 @@ class GerenciarAlunoTest extends TestCase
     {
         $this->actingAsAdmin();
 
+
+        $curso = Curso::firstOrCreate(['nome' => 'Ciência da Computação']);
+
         $payload = [
             'name' => 'Aluno Matricula Inv',
-            'curso' => 'Ciência da Computação',
+            'curso_id' => $curso->id,
             'email' => 'matricula.inv@example.com',
             'matricula' => '2023ABC',
             'password' => 'Senha123!',
