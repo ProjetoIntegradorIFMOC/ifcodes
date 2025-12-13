@@ -269,77 +269,77 @@ class SubmissaoController extends Controller
      *      @OA\Response(response=404, description="Atividade não encontrada ou não pertence à turma")
      * )
      */
-    // public function getSubmissionsByActivity(Request $request, int $turmaId, int $atividadeId)
-    // {
-    //     // Verificar se o usuário tem permissão (professor ou admin)
-    //     $user = $request->user();
-    //
-    //     if (!$user->hasAnyRole(['professor', 'admin'])) {
-    //         return response()->json([
-    //             'message' => 'Acesso negado. Apenas professores e administradores podem visualizar todas as submissões.'
-    //         ], 403);
-    //     }
-    //
-    //     // Verificar se a atividade pertence à turma
-    //     $atividade = \App\Models\Atividade::where('id', $atividadeId)
-    //         ->where('turma_id', $turmaId)
-    //         ->first();
-    //
-    //     if (!$atividade) {
-    //         return response()->json([
-    //             'message' => 'Atividade não encontrada ou não pertence a esta turma.'
-    //         ], 404);
-    //     }
-    //
-    //     // Buscar todas as submissões da atividade com informações do usuário
-    //     $submissoes = Submissao::with(['correcoes', 'user'])
-    //         ->where('atividade_id', $atividadeId)
-    //         ->orderByDesc('data_submissao')
-    //         ->get();
-    //
-    //     // Formatar as submissões
-    //     $submissoesFormatted = $submissoes->map(function (Submissao $submissao) {
-    //         $dados = $submissao->toArray();
-    //
-    //         // Calcula o status real baseado nas correções
-    //         $statusFinal = Status::ACEITA;
-    //
-    //         if ($submissao->correcoes->isNotEmpty()) {
-    //             foreach ($submissao->correcoes as $correcao) {
-    //                 if ($correcao->status_correcao_id && $correcao->status_correcao_id != Status::ACEITA) {
-    //                     $statusFinal = $correcao->status_correcao_id;
-    //                     break;
-    //                 }
-    //             }
-    //         } else {
-    //             $statusFinal = $submissao->status_correcao_id;
-    //         }
-    //
-    //         $statusInfo = Status::get((int) $statusFinal) ?? null;
-    //
-    //         $dados['status'] = $statusInfo['nome'] ?? null;
-    //         $dados['status_descricao'] = $statusInfo['descricao'] ?? null;
-    //
-    //         // Adicionar informações do usuário
-    //         if ($submissao->user) {
-    //             $dados['user_name'] = $submissao->user->name;
-    //             $dados['user_email'] = $submissao->user->email;
-    //         }
-    //
-    //         unset($dados['status_correcao_id']);
-    //         unset($dados['correcoes']);
-    //         unset($dados['user']); // Remove objeto user completo
-    //
-    //         return $dados;
-    //     })->all();
-    //
-    //     $response = [
-    //         'turma_id' => $turmaId,
-    //         'atividade_id' => $atividadeId,
-    //         'total_submissoes' => count($submissoesFormatted),
-    //         'submissoes' => $submissoesFormatted,
-    //     ];
-    //
-    //     return response()->json($response);
-    // }
+    public function getSubmissionsByActivity(Request $request, int $turmaId, int $atividadeId)
+    {
+        // Verificar se o usuário tem permissão (professor ou admin)
+        $user = $request->user();
+
+        if (!$user->hasAnyRole(['professor', 'admin'])) {
+            return response()->json([
+                'message' => 'Acesso negado. Apenas professores e administradores podem visualizar todas as submissões.'
+            ], 403);
+        }
+
+        // Verificar se a atividade pertence à turma
+        $atividade = \App\Models\Atividade::where('id', $atividadeId)
+            ->where('turma_id', $turmaId)
+            ->first();
+
+        if (!$atividade) {
+            return response()->json([
+                'message' => 'Atividade não encontrada ou não pertence a esta turma.'
+            ], 404);
+        }
+
+        // Buscar todas as submissões da atividade com informações do usuário
+        $submissoes = Submissao::with(['correcoes', 'user'])
+            ->where('atividade_id', $atividadeId)
+            ->orderByDesc('data_submissao')
+            ->get();
+
+        // Formatar as submissões
+        $submissoesFormatted = $submissoes->map(function (Submissao $submissao) {
+            $dados = $submissao->toArray();
+
+            // Calcula o status real baseado nas correções
+            $statusFinal = Status::ACEITA;
+
+            if ($submissao->correcoes->isNotEmpty()) {
+                foreach ($submissao->correcoes as $correcao) {
+                    if ($correcao->status_correcao_id && $correcao->status_correcao_id != Status::ACEITA) {
+                        $statusFinal = $correcao->status_correcao_id;
+                        break;
+                    }
+                }
+            } else {
+                $statusFinal = $submissao->status_correcao_id;
+            }
+
+            $statusInfo = Status::get((int) $statusFinal) ?? null;
+
+            $dados['status'] = $statusInfo['nome'] ?? null;
+            $dados['status_descricao'] = $statusInfo['descricao'] ?? null;
+
+            // Adicionar informações do usuário
+            if ($submissao->user) {
+                $dados['user_name'] = $submissao->user->name;
+                $dados['user_email'] = $submissao->user->email;
+            }
+
+            unset($dados['status_correcao_id']);
+            unset($dados['correcoes']);
+            unset($dados['user']); // Remove objeto user completo
+
+            return $dados;
+        })->all();
+
+        $response = [
+            'turma_id' => $turmaId,
+            'atividade_id' => $atividadeId,
+            'total_submissoes' => count($submissoesFormatted),
+            'submissoes' => $submissoesFormatted,
+        ];
+
+        return response()->json($response);
+    }
 }

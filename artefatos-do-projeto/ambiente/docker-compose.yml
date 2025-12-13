@@ -10,7 +10,6 @@ services:
   # --- SERVIÇOS DO JUDGE0 ---
   judge0_server:
     image: judge0/judge0:1.13.1
-    platform: linux/amd64
     container_name: judge0_server
     depends_on:
       - postgres
@@ -25,7 +24,6 @@ services:
 
   judge0_workers:
     image: judge0/judge0:1.13.1
-    platform: linux/amd64
     command: ["./scripts/workers"]
     container_name: judge0_workers
     depends_on:
@@ -47,29 +45,6 @@ services:
     env_file: judge0.conf
     <<: *default-logging
     restart: always
-
-# --- REDIS DO LARAVEL ---
-  laravel_redis:
-    image: redis:7.2.4
-    container_name: laravel_redis
-    command: ["redis-server", "--appendonly", "no"]
-    <<: *default-logging
-    restart: always
-
-  queue_worker:
-    build:
-      context: ./back
-      dockerfile: src/docker/php/Dockerfile
-    container_name: laravel_queue
-    working_dir: /var/www/html
-    command: php artisan queue:work redis --queue=default --sleep=3 --tries=3
-    depends_on:
-      - backend_app
-      - laravel_redis
-    restart: unless-stopped
-    volumes:
-      - ./back/src/:/var/www/html:z
-      - /var/www/html/vendor
 
   # --- SERVIÇOS DO BANCO DE DADOS DO BACKEND E JUDGE0 ---
   postgres:
@@ -103,7 +78,6 @@ services:
     depends_on:
       - postgres
       - judge0_server
-      - laravel_redis
 
   # --- SERVIÇOS DO FRONTEND (REACT) ---
   frontend_app:

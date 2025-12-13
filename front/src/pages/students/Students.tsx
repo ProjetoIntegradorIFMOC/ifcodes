@@ -12,6 +12,7 @@ import {
   updateStudent,
   deleteStudent,
 } from "@/services/StudentsService";
+import { getAllCourses, type Curso } from "@/services/CoursesService";
 import type { Student } from "@/types";
 import { useEffect, useState } from "react";
 import {
@@ -55,6 +56,7 @@ interface StudentFormModalProps {
   onSave: (student: Omit<Student, "id"> | Student) => void;
   student: Student | null;
   mode: "create" | "edit";
+  cursos: Curso[];
 }
 
 // Componente de modal de formulário para criar/editar aluno
@@ -64,6 +66,7 @@ function StudentFormModal({
   onSave,
   student,
   mode,
+  cursos,
 }: StudentFormModalProps) {
   const [formData, setFormData] = useState({
     name: "",
@@ -126,22 +129,22 @@ function StudentFormModal({
     }
 
     if (!formData.curso_id.trim()) {
-      newErrors.curso_id = "Curso ID é obrigatório";
+      newErrors.curso_id = "Curso é obrigatório";
     }
 
     if (mode === "create") {
       if (!formData.password) {
         newErrors.password = "Senha é obrigatória";
-      } else if (formData.password.length < 6) {
-        newErrors.password = "Senha deve ter no mínimo 6 caracteres";
+      } else if (formData.password.length < 8) {
+        newErrors.password = "Senha deve ter no mínimo 8 caracteres";
       }
 
       if (formData.password !== formData.password_confirmation) {
         newErrors.password_confirmation = "As senhas não coincidem";
       }
     } else if (mode === "edit" && formData.password) {
-      if (formData.password.length < 6) {
-        newErrors.password = "Senha deve ter no mínimo 6 caracteres";
+      if (formData.password.length < 8) {
+        newErrors.password = "Senha deve ter no mínimo 8 caracteres";
       }
 
       if (formData.password !== formData.password_confirmation) {
@@ -276,15 +279,14 @@ function StudentFormModal({
             )}
           </div>
 
-          {/* Curso ID */}
+          {/* Curso */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Curso ID *
+              Curso *
             </label>
             <div className="relative">
               <BookOpen className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="number"
+              <select
                 value={formData.curso_id}
                 onChange={(e) =>
                   setFormData({ ...formData, curso_id: e.target.value })
@@ -292,9 +294,14 @@ function StudentFormModal({
                 className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                   errors.curso_id ? "border-red-500" : "border-gray-300"
                 }`}
-                placeholder="1"
-                min="1"
-              />
+              >
+                <option value="">Selecione um curso</option>
+                {cursos.map((curso) => (
+                  <option key={curso.id} value={curso.id}>
+                    {curso.nome}
+                  </option>
+                ))}
+              </select>
             </div>
             {errors.curso_id && (
               <p className="text-red-500 text-xs mt-1">{errors.curso_id}</p>
@@ -427,6 +434,7 @@ function DeleteConfirmDialog({
 // Componente principal da página de gerenciamento de alunos
 export default function Students() {
   const [students, setStudents] = useState<Student[]>([]);
+  const [cursos, setCursos] = useState<Curso[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
@@ -439,10 +447,21 @@ export default function Students() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
 
-  // Carrega os alunos ao montar o componente
+  // Carrega os alunos e cursos ao montar o componente
   useEffect(() => {
     loadStudents();
+    loadCursos();
   }, []);
+
+  // Função para carregar todos os cursos
+  async function loadCursos() {
+    try {
+      const data = await getAllCourses();
+      setCursos(data);
+    } catch (error) {
+      console.error("Erro ao carregar cursos:", error);
+    }
+  }
 
   // Função para carregar todos os alunos
   async function loadStudents() {
@@ -710,6 +729,7 @@ export default function Students() {
         onSave={handleSave}
         student={selectedStudent}
         mode={modalMode}
+        cursos={cursos}
       />
 
       {/* Dialog de confirmação de remoção */}

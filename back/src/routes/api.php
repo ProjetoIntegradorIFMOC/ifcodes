@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AtividadeController;
 use App\Http\Controllers\CorrecaoController;
+use App\Http\Controllers\CursoController;
 use App\Http\Controllers\ProblemaController;
 use App\Http\Controllers\SubmissaoController;
 use App\Http\Controllers\ProfessorController;
@@ -39,6 +40,9 @@ Route::middleware('auth:sanctum')->group(function () {
         ->parameters(['professores' => 'professor']);
     Route::apiResource('alunos', AlunoController::class);
     Route::apiResource('turmas', TurmaController::class);
+
+    // Rota de cursos
+    Route::get('/cursos', [CursoController::class, 'index']);
 
 
     Route::get('/turmas/{turma_id}/listar-alunos', [TurmaController::class, 'listarAlunos']);

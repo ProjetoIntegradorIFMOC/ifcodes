@@ -46,7 +46,7 @@ export default function Notification({
 
     return (
         <div
-            className={`fixed bottom-6 right-6 ${typeStyles[type]} px-6 py-3 rounded shadow-lg flex flex-col items-center gap-2 z-50 w-[350px]`}
+            className={`fixed bottom-6 right-6 ${typeStyles[type]} px-6 py-3 rounded shadow-lg flex flex-col items-center gap-2 z-[100] w-[350px]`}
         >
             {onClose && (
                 <button
