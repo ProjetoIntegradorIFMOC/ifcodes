@@ -2,7 +2,7 @@
 import type { Problem } from "../types";
 import axios from "axios";
 
-const API_URL = (import.meta as any).env?.VITE_API_URL || "http://localhost:8000";
+const API_URL = (import.meta as any).env?.VITE_API_URL || "";
 
 /**
  * Simula uma chamada de API para buscar um problema pelo id.

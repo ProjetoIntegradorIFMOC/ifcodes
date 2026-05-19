@@ -79,6 +79,10 @@ if [ ! -f "back/src/.env" ] || [ ! -f "judge0.conf" ] || [ ! -f "front/.env" ]; 
         echo -e "${YELLOW}Aviso: IP não detectado/fornecido. Utilizando $MACHINE_IP como fallback.${NC}"
     fi
 
+    echo -e "\n${YELLOW}--- Configuração de Domínio/Tunnel (Opcional) ---${NC}"
+    echo -e "${YELLOW}Se você usa ngrok ou tem um domínio público, insira-o aqui.${NC}"
+    read -p "Domínio/Tunnel (ex: meudominio.com ou tunnel.ngrok-free.dev): " PUBLIC_DOMAIN
+
     # 2. Criação dos arquivos .env
     echo -e "\n${BLUE}[1/4] Configurando arquivos .env...${NC}"
 
@@ -88,8 +92,15 @@ if [ ! -f "back/src/.env" ] || [ ! -f "judge0.conf" ] || [ ! -f "front/.env" ]; 
     sedi "s|DB_PASSWORD=.*|DB_PASSWORD=$DB_PASSWORD|" back/src/.env
     sedi "s|APP_NAME=.*|APP_NAME=\"$APP_NAME\"|" back/src/.env
     sedi "s|SESSION_DOMAIN=.*|SESSION_DOMAIN=$MACHINE_IP|" back/src/.env
-    sedi "s|SANCTUM_STATEFUL_DOMAINS=.*|SANCTUM_STATEFUL_DOMAINS=$MACHINE_IP:5173,$MACHINE_IP|" back/src/.env
-    sedi "s|FRONTEND_URL=.*|FRONTEND_URL=http://$MACHINE_IP:5173|" back/src/.env
+    
+    if [ -n "$PUBLIC_DOMAIN" ]; then
+        sedi "s|SANCTUM_STATEFUL_DOMAINS=.*|SANCTUM_STATEFUL_DOMAINS=$MACHINE_IP:5173,$MACHINE_IP,$PUBLIC_DOMAIN|" back/src/.env
+        sedi "s|FRONTEND_URL=.*|FRONTEND_URL=http://$MACHINE_IP:5173,https://$PUBLIC_DOMAIN|" back/src/.env
+        sedi "s|allowedHosts:.*|allowedHosts: [\"localhost\", \"127.0.0.1\", \"$PUBLIC_DOMAIN\"],|" front/vite.config.ts
+    else
+        sedi "s|SANCTUM_STATEFUL_DOMAINS=.*|SANCTUM_STATEFUL_DOMAINS=$MACHINE_IP:5173,$MACHINE_IP|" back/src/.env
+        sedi "s|FRONTEND_URL=.*|FRONTEND_URL=http://$MACHINE_IP:5173|" back/src/.env
+    fi
 
     # Judge0
     cp judge0.conf.example judge0.conf

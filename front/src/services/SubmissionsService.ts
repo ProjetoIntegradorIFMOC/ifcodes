@@ -28,7 +28,7 @@ import { fakeSubmissions } from "../mocks";
 import axios from "axios";
 import Cookies from "js-cookie";
 
-const API_URL = (import.meta as any).env?.VITE_API_URL || "http://localhost:8000";
+const API_URL = (import.meta as any).env?.VITE_API_URL || "";
 
 /**
  * Mapeia language_id do Judge0 para slug usado no frontend
