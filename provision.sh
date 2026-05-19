@@ -56,14 +56,26 @@ if [ ! -f "back/src/.env" ] || [ ! -f "judge0.conf" ] || [ ! -f "front/.env" ]; 
     read -p "Porta do Backend [8000]: " APP_PORT
     APP_PORT=${APP_PORT:-"8000"}
 
+    # Obtendo o IP da máquina
+    DETECTED_IP=$(hostname -I | awk '{print $1}')
+    read -p "IP da máquina [$DETECTED_IP]: " MACHINE_IP
+    MACHINE_IP=${MACHINE_IP:-$DETECTED_IP}
+
+    if [ -z "$MACHINE_IP" ]; then
+        MACHINE_IP="127.0.0.1"
+        echo -e "${YELLOW}Aviso: IP não detectado/fornecido. Utilizando $MACHINE_IP como fallback.${NC}"
+    fi
+
     # 2. Criação dos arquivos .env
     echo -e "\n${BLUE}[1/4] Configurando arquivos .env...${NC}"
 
     # Backend
     cp back/src/.env.example back/src/.env
-    sedi "s|APP_URL=.*|APP_URL=http://localhost:$APP_PORT|" back/src/.env
+    sedi "s|APP_URL=.*|APP_URL=http://$MACHINE_IP:$APP_PORT|" back/src/.env
     sedi "s|DB_PASSWORD=.*|DB_PASSWORD=$DB_PASSWORD|" back/src/.env
     sedi "s|APP_NAME=.*|APP_NAME=\"$APP_NAME\"|" back/src/.env
+    sedi "s|SANCTUM_STATEFUL_DOMAINS=.*|SANCTUM_STATEFUL_DOMAINS=$MACHINE_IP:5173,$MACHINE_IP|" back/src/.env
+    sedi "s|FRONTEND_URL=.*|FRONTEND_URL=http://$MACHINE_IP:5173|" back/src/.env
 
     # Judge0
     cp judge0.conf.example judge0.conf
@@ -71,13 +83,16 @@ if [ ! -f "back/src/.env" ] || [ ! -f "judge0.conf" ] || [ ! -f "front/.env" ]; 
 
     # Frontend
     cp front/.env.example front/.env
-    sedi "s|VITE_API_URL=.*|VITE_API_URL=http://localhost:$APP_PORT|" front/.env
+    sedi "s|VITE_API_URL=.*|VITE_API_URL=http://$MACHINE_IP:$APP_PORT|" front/.env
+    sedi "s|VITE_WS_URL=.*|VITE_WS_URL=ws://$MACHINE_IP:3002|" front/.env
     sedi "s|VITE_APP_NAME=.*|VITE_APP_NAME=\"$APP_NAME\"|" front/.env
 else
     echo -e "\n${GREEN}Configurações já existentes encontradas. Iniciando sistema...${NC}"
-    # Tenta extrair a porta do Backend do .env, assumindo 8000 como fallback
-    APP_PORT=$(grep "APP_URL=" back/src/.env | grep -o '[0-9]\+$')
+    # Tenta extrair a porta e o IP do Backend do .env
+    APP_PORT=$(grep "APP_URL=" back/src/.env | grep -o ':[0-9]\+' | tr -d ':')
     APP_PORT=${APP_PORT:-"8000"}
+    MACHINE_IP=$(grep "APP_URL=" back/src/.env | sed -E 's/.*http:\/\/([^:]+).*/\1/')
+    MACHINE_IP=${MACHINE_IP:-"127.0.0.1"}
     
     echo -e "${BLUE}[1/4] Arquivos .env carregados com sucesso.${NC}"
 fi
@@ -106,8 +121,8 @@ fi
 echo -e "\n${GREEN}==========================================================${NC}"
 echo -e "${GREEN}       SISTEMA INICIADO COM SUCESSO!                      ${NC}"
 echo -e "${GREEN}==========================================================${NC}"
-echo -e "Frontend: http://localhost:5173"
-echo -e "Backend:  http://localhost:$APP_PORT"
+echo -e "Frontend: http://$MACHINE_IP:5173"
+echo -e "Backend:  http://$MACHINE_IP:$APP_PORT"
 if [ "$IS_FIRST_RUN" = true ]; then
     echo -e "Credenciais Padrão: admin@admin.com / 12345678"
 fi
