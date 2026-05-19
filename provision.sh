@@ -56,8 +56,15 @@ if [ ! -f "back/src/.env" ] || [ ! -f "judge0.conf" ] || [ ! -f "front/.env" ]; 
     read -p "Porta do Backend [8000]: " APP_PORT
     APP_PORT=${APP_PORT:-"8000"}
 
-    # Obtendo o IP da máquina
-    DETECTED_IP=$(hostname -I | awk '{print $1}')
+    # Obtendo o IP da máquina na rede local (ignorando IPs de Docker/VMs locais se possível)
+    DETECTED_IP=$(hostname -I | tr ' ' '\n' | grep -v '^172\.' | grep -v '^127\.' | head -n 1)
+
+    if [ -z "$DETECTED_IP" ]; then
+        DETECTED_IP=$(hostname -I | awk '{print $1}')
+    fi
+
+    echo -e "${YELLOW}Aviso: Se você estiver rodando em uma VPS, utilize o IP/DNS público.${NC}"
+    echo -e "${YELLOW}       Se for rede local, confirme o IP LAN correto.${NC}"
     read -p "IP da máquina [$DETECTED_IP]: " MACHINE_IP
     MACHINE_IP=${MACHINE_IP:-$DETECTED_IP}
 
