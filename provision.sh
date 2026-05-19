@@ -56,13 +56,16 @@ if [ ! -f "back/src/.env" ] || [ ! -f "judge0.conf" ] || [ ! -f "front/.env" ]; 
     read -p "Porta do Backend [8000]: " APP_PORT
     APP_PORT=${APP_PORT:-"8000"}
 
-    # Obtendo o IP da máquina na rede local (ignorando IPs de Docker/VMs locais se possível)
+    # Obtendo o IP da máquina na rede local (ignorando IPs de Docker default e loopback, e forçando IPv4)
     if [ "$(uname)" = "Darwin" ]; then
         DETECTED_IP=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null)
     else
-        DETECTED_IP=$(hostname -I 2>/dev/null | tr ' ' '\n' | grep -v '^172\.' | grep -v '^127\.' | head -n 1)
+        # Filtra apenas IPv4, remove loopback (127.) e a subnet default do Docker (172.17.),
+        # mas preserva outras possíveis LANs (como 172.16., 172.18., etc)
+        DETECTED_IP=$(hostname -I 2>/dev/null | tr ' ' '\n' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' | grep -v '^127\.' | grep -v '^172\.17\.' | head -n 1)
         if [ -z "$DETECTED_IP" ]; then
-            DETECTED_IP=$(hostname -I 2>/dev/null | awk '{print $1}')
+            # Fallback pegando o primeiro IPv4 caso o filtro acima falhe
+            DETECTED_IP=$(hostname -I 2>/dev/null | tr ' ' '\n' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1)
         fi
     fi
 
@@ -84,9 +87,9 @@ if [ ! -f "back/src/.env" ] || [ ! -f "judge0.conf" ] || [ ! -f "front/.env" ]; 
     sedi "s|APP_URL=.*|APP_URL=http://$MACHINE_IP:$APP_PORT|" back/src/.env
     sedi "s|DB_PASSWORD=.*|DB_PASSWORD=$DB_PASSWORD|" back/src/.env
     sedi "s|APP_NAME=.*|APP_NAME=\"$APP_NAME\"|" back/src/.env
+    sedi "s|SESSION_DOMAIN=.*|SESSION_DOMAIN=$MACHINE_IP|" back/src/.env
     sedi "s|SANCTUM_STATEFUL_DOMAINS=.*|SANCTUM_STATEFUL_DOMAINS=$MACHINE_IP:5173,$MACHINE_IP|" back/src/.env
     sedi "s|FRONTEND_URL=.*|FRONTEND_URL=http://$MACHINE_IP:5173|" back/src/.env
-    sedi "s|SESSION_DOMAIN=.*|SESSION_DOMAIN=|" back/src/.env
 
     # Judge0
     cp judge0.conf.example judge0.conf
