@@ -86,6 +86,7 @@ if [ ! -f "back/src/.env" ] || [ ! -f "judge0.conf" ] || [ ! -f "front/.env" ]; 
     sedi "s|APP_NAME=.*|APP_NAME=\"$APP_NAME\"|" back/src/.env
     sedi "s|SANCTUM_STATEFUL_DOMAINS=.*|SANCTUM_STATEFUL_DOMAINS=$MACHINE_IP:5173,$MACHINE_IP|" back/src/.env
     sedi "s|FRONTEND_URL=.*|FRONTEND_URL=http://$MACHINE_IP:5173|" back/src/.env
+    sedi "s|SESSION_DOMAIN=.*|SESSION_DOMAIN=|" back/src/.env
 
     # Judge0
     cp judge0.conf.example judge0.conf
