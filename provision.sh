@@ -57,10 +57,13 @@ if [ ! -f "back/src/.env" ] || [ ! -f "judge0.conf" ] || [ ! -f "front/.env" ]; 
     APP_PORT=${APP_PORT:-"8000"}
 
     # Obtendo o IP da máquina na rede local (ignorando IPs de Docker/VMs locais se possível)
-    DETECTED_IP=$(hostname -I | tr ' ' '\n' | grep -v '^172\.' | grep -v '^127\.' | head -n 1)
-
-    if [ -z "$DETECTED_IP" ]; then
-        DETECTED_IP=$(hostname -I | awk '{print $1}')
+    if [ "$(uname)" = "Darwin" ]; then
+        DETECTED_IP=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null)
+    else
+        DETECTED_IP=$(hostname -I 2>/dev/null | tr ' ' '\n' | grep -v '^172\.' | grep -v '^127\.' | head -n 1)
+        if [ -z "$DETECTED_IP" ]; then
+            DETECTED_IP=$(hostname -I 2>/dev/null | awk '{print $1}')
+        fi
     fi
 
     echo -e "${YELLOW}Aviso: Se você estiver rodando em uma VPS, utilize o IP/DNS público.${NC}"
@@ -96,9 +99,13 @@ if [ ! -f "back/src/.env" ] || [ ! -f "judge0.conf" ] || [ ! -f "front/.env" ]; 
 else
     echo -e "\n${GREEN}Configurações já existentes encontradas. Iniciando sistema...${NC}"
     # Tenta extrair a porta e o IP do Backend do .env
-    APP_PORT=$(grep "APP_URL=" back/src/.env | grep -o ':[0-9]\+' | tr -d ':')
-    APP_PORT=${APP_PORT:-"8000"}
-    MACHINE_IP=$(grep "APP_URL=" back/src/.env | sed -E 's/.*http:\/\/([^:]+).*/\1/')
+    APP_URL_VAL=$(grep "^APP_URL=" back/src/.env | cut -d '=' -f2)
+    APP_PORT=$(echo "$APP_URL_VAL" | sed -E 's|.*://[^:]+:([0-9]+).*|\1|')
+    if ! [[ "$APP_PORT" =~ ^[0-9]+$ ]]; then
+        APP_PORT="8000"
+    fi
+
+    MACHINE_IP=$(echo "$APP_URL_VAL" | sed -E 's|https?://||' | sed -E 's|[:/].*||')
     MACHINE_IP=${MACHINE_IP:-"127.0.0.1"}
     
     echo -e "${BLUE}[1/4] Arquivos .env carregados com sucesso.${NC}"
