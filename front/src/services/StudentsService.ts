@@ -28,7 +28,7 @@ function handleAuthError(error: unknown) {
  */
 export async function getAllStudents(): Promise<Student[]> {
   try {
-    const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/alunos`, {
+    const response = await axios.get(`/api/alunos`, {
       headers: getAuthHeaders(),
       withCredentials: true,
     });
@@ -61,7 +61,7 @@ export async function getAllStudents(): Promise<Student[]> {
  */
 export async function getStudentById(id: number): Promise<Student | undefined> {
   try {
-    const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/alunos/${id}`, {
+    const response = await axios.get(`/api/alunos/${id}`, {
       headers: getAuthHeaders(),
       withCredentials: true,
     });
@@ -81,12 +81,12 @@ export async function getStudentById(id: number): Promise<Student | undefined> {
 export async function createStudent(student: Omit<Student, "id">): Promise<Student> {
   try {
     // Obter CSRF token antes de criar
-    await axios.get(`${import.meta.env.VITE_API_URL}/sanctum/csrf-cookie`, {
+    await axios.get(`/sanctum/csrf-cookie`, {
       withCredentials: true,
     });
 
     const response = await axios.post(
-      `${import.meta.env.VITE_API_URL}/api/alunos`,
+      `/api/alunos`,
       student,
       {
         headers: getAuthHeaders(),
@@ -109,12 +109,12 @@ export async function createStudent(student: Omit<Student, "id">): Promise<Stude
 export async function updateStudent(id: number, student: Partial<Student>): Promise<Student> {
   try {
     // Obter CSRF token antes de atualizar
-    await axios.get(`${import.meta.env.VITE_API_URL}/sanctum/csrf-cookie`, {
+    await axios.get(`/sanctum/csrf-cookie`, {
       withCredentials: true,
     });
 
     const response = await axios.put(
-      `${import.meta.env.VITE_API_URL}/api/alunos/${id}`,
+      `/api/alunos/${id}`,
       student,
       {
         headers: getAuthHeaders(),
@@ -136,11 +136,11 @@ export async function updateStudent(id: number, student: Partial<Student>): Prom
 export async function deleteStudent(id: number): Promise<void> {
   try {
     // Obter CSRF token antes de deletar
-    await axios.get(`${import.meta.env.VITE_API_URL}/sanctum/csrf-cookie`, {
+    await axios.get(`/sanctum/csrf-cookie`, {
       withCredentials: true,
     });
 
-    await axios.delete(`${import.meta.env.VITE_API_URL}/api/alunos/${id}`, {
+    await axios.delete(`/api/alunos/${id}`, {
       headers: getAuthHeaders(),
       withCredentials: true,
     });

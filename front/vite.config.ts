@@ -12,7 +12,25 @@ export default defineConfig(({ mode }) => ({
     },
   },
   server: {
-    allowedHosts: ["ifcodes.cloud"],
+    allowedHosts: ["localhost", "127.0.0.1"],
+    proxy: {
+      '/api': {
+        target: 'http://backend_app:8000',
+        changeOrigin: true,
+      },
+      '/sanctum': {
+        target: 'http://backend_app:8000',
+        changeOrigin: true,
+      },
+      '/login': {
+        target: 'http://backend_app:8000',
+        changeOrigin: true,
+      },
+      '/logout': {
+        target: 'http://backend_app:8000',
+        changeOrigin: true,
+      },
+    },
     watch: mode === "development" ? { usePolling: true } : undefined,
   },
   define: {

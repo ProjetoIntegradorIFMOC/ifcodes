@@ -86,11 +86,11 @@ export default function Header() {
 
   async function handleLogout() {
     try {
-      await axios.get(`${import.meta.env.VITE_API_URL}/sanctum/csrf-cookie`, {
+      await axios.get(`/sanctum/csrf-cookie`, {
         withCredentials: true,
       });
       await axios.post(
-        `${import.meta.env.VITE_API_URL}/logout`,
+        `/logout`,
         {},
         {
           headers: {

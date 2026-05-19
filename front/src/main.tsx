@@ -8,7 +8,7 @@ import RealtimeNotifications from "./components/RealtimeNotifications.tsx";
 import axios from "axios";
 
 // Configure axios defaults for the app: base URL and send credentials (for Sanctum)
-const API_URL = import.meta.env?.VITE_API_URL || "http://localhost:8000";
+const API_URL = import.meta.env?.VITE_API_URL || "";
 axios.defaults.baseURL = API_URL;
 axios.defaults.withCredentials = true;
 

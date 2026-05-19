@@ -2,11 +2,11 @@ import axios from "axios";
 import Cookies from "js-cookie";
 
 export async function sendForgotPasswordEmail(email: string): Promise<void> {
-    await axios.get(`${import.meta.env.VITE_API_URL}/sanctum/csrf-cookie`, {
+    await axios.get(`/sanctum/csrf-cookie`, {
         withCredentials: true
     });
 
-    await axios.post(`${import.meta.env.VITE_API_URL}/api/forgot-password-temp`, {
+    await axios.post(`/api/forgot-password-temp`, {
         email
     }, {
         withCredentials: true,
@@ -24,11 +24,11 @@ export async function resetPassword(data: {
     password: string;
     password_confirmation: string;
 }): Promise<void> {
-    await axios.get(`${import.meta.env.VITE_API_URL}/sanctum/csrf-cookie`, {
+    await axios.get(`/sanctum/csrf-cookie`, {
         withCredentials: true
     });
 
-    await axios.post(`${import.meta.env.VITE_API_URL}/reset-password`, data, {
+    await axios.post(`/reset-password`, data, {
         withCredentials: true,
         headers: {
             'Content-Type': 'application/json',

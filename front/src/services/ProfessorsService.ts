@@ -28,7 +28,7 @@ function handleAuthError(error: unknown) {
  */
 export async function getAllProfessors(): Promise<Professor[]> {
   try {
-    const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/professores`, {
+    const response = await axios.get(`/api/professores`, {
       headers: getAuthHeaders(),
       withCredentials: true,
     });
@@ -48,7 +48,7 @@ export async function getAllProfessors(): Promise<Professor[]> {
  */
 export async function getProfessorById(id: number): Promise<Professor | undefined> {
   try {
-    const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/professores/${id}`, {
+    const response = await axios.get(`/api/professores/${id}`, {
       headers: getAuthHeaders(),
       withCredentials: true,
     });
@@ -68,12 +68,12 @@ export async function getProfessorById(id: number): Promise<Professor | undefine
 export async function createProfessor(professor: Omit<Professor, "id">): Promise<Professor> {
   try {
     // Obter CSRF token antes de criar
-    await axios.get(`${import.meta.env.VITE_API_URL}/sanctum/csrf-cookie`, {
+    await axios.get(`/sanctum/csrf-cookie`, {
       withCredentials: true,
     });
 
     const response = await axios.post(
-      `${import.meta.env.VITE_API_URL}/api/professores`,
+      `/api/professores`,
       professor,
       {
         headers: getAuthHeaders(),
@@ -96,12 +96,12 @@ export async function createProfessor(professor: Omit<Professor, "id">): Promise
 export async function updateProfessor(id: number, professor: Partial<Professor>): Promise<Professor> {
   try {
     // Obter CSRF token antes de atualizar
-    await axios.get(`${import.meta.env.VITE_API_URL}/sanctum/csrf-cookie`, {
+    await axios.get(`/sanctum/csrf-cookie`, {
       withCredentials: true,
     });
 
     const response = await axios.put(
-      `${import.meta.env.VITE_API_URL}/api/professores/${id}`,
+      `/api/professores/${id}`,
       professor,
       {
         headers: getAuthHeaders(),
@@ -123,11 +123,11 @@ export async function updateProfessor(id: number, professor: Partial<Professor>)
 export async function deleteProfessor(id: number): Promise<void> {
   try {
     // Obter CSRF token antes de deletar
-    await axios.get(`${import.meta.env.VITE_API_URL}/sanctum/csrf-cookie`, {
+    await axios.get(`/sanctum/csrf-cookie`, {
       withCredentials: true,
     });
 
-    await axios.delete(`${import.meta.env.VITE_API_URL}/api/professores/${id}`, {
+    await axios.delete(`/api/professores/${id}`, {
       headers: getAuthHeaders(),
       withCredentials: true,
     });
