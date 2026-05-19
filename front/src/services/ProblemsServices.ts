@@ -1,19 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { Problem } from "../types";
 import axios from "axios";
-import Cookies from "js-cookie";
 
-const API_URL = (import.meta as any).env?.VITE_API_URL || "";
-
-function getAuthHeaders() {
-  const token = localStorage.getItem("auth_token");
-  return {
-    Authorization: `Bearer ${token}`,
-    Accept: "application/json",
-    "Content-Type": "application/json",
-    "X-XSRF-TOKEN": Cookies.get("XSRF-TOKEN") || "",
-  };
-}
+const API_URL = (import.meta as any).env?.VITE_API_URL || "http://localhost:8000";
 
 /**
  * Simula uma chamada de API para buscar um problema pelo id.
@@ -23,11 +12,14 @@ function getAuthHeaders() {
 export async function getProblemById(id: string): Promise<Problem | undefined> {
   try {
     const response = await axios.get(`${API_URL}/api/problemas/${id}`, {
-      headers: getAuthHeaders(),
-      withCredentials: true,
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
     });
 
-    const problema = response.data.data || response.data;
+    const problema = response.data;
     return {
       id: problema.id,
       title: problema.titulo,
@@ -50,11 +42,14 @@ export async function getProblemById(id: string): Promise<Problem | undefined> {
 export async function getAllProblems(): Promise<Problem[]> {
   try {
     const response = await axios.get(`${API_URL}/api/problemas`, {
-      headers: getAuthHeaders(),
-      withCredentials: true,
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
     });
 
-    const problemas = response.data.data || (Array.isArray(response.data) ? response.data : response.data[0] || []);
+    const problemas = Array.isArray(response.data) ? response.data : response.data[0] || [];
 
     return problemas.map((problema: any) => ({
       id: problema.id,
@@ -90,16 +85,15 @@ export async function createProblem(problemData: {
 
 }): Promise<Problem | null> {
   try {
-    await axios.get(`${API_URL}/sanctum/csrf-cookie`, {
-      withCredentials: true,
-    });
-
     const response = await axios.post(`${API_URL}/api/problemas`, problemData, {
-      headers: getAuthHeaders(),
-      withCredentials: true,
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
     });
 
-    const problema = response.data.data || response.data;
+    const problema = response.data;
     return {
       id: problema.id,
       title: problema.titulo,
@@ -125,16 +119,15 @@ export async function updateProblem(id: number, problemData: {
   }>;
 }): Promise<Problem | null> {
   try {
-    await axios.get(`${API_URL}/sanctum/csrf-cookie`, {
-      withCredentials: true,
-    });
-
     const response = await axios.put(`${API_URL}/api/problemas/${id}`, problemData, {
-      headers: getAuthHeaders(),
-      withCredentials: true,
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
     });
 
-    const problema = response.data.data || response.data;
+    const problema = response.data;
     return {
       id: problema.id,
       title: problema.titulo,
@@ -150,13 +143,12 @@ export async function updateProblem(id: number, problemData: {
 
 export async function deleteProblem(id: number): Promise<boolean> {
   try {
-    await axios.get(`${API_URL}/sanctum/csrf-cookie`, {
-      withCredentials: true,
-    });
-
     await axios.delete(`${API_URL}/api/problemas/${id}`, {
-      headers: getAuthHeaders(),
-      withCredentials: true,
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
     });
     return true;
   } catch (error) {

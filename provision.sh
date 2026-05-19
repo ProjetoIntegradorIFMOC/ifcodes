@@ -91,7 +91,7 @@ if [ ! -f "back/src/.env" ] || [ ! -f "judge0.conf" ] || [ ! -f "front/.env" ]; 
     sedi "s|APP_URL=.*|APP_URL=http://$MACHINE_IP:$APP_PORT|" back/src/.env
     sedi "s|DB_PASSWORD=.*|DB_PASSWORD=$DB_PASSWORD|" back/src/.env
     sedi "s|APP_NAME=.*|APP_NAME=\"$APP_NAME\"|" back/src/.env
-    
+
     if [ -n "$PUBLIC_DOMAIN" ]; then
         sedi "s|SESSION_DOMAIN=.*|SESSION_DOMAIN=|" back/src/.env
         sedi "s|SANCTUM_STATEFUL_DOMAINS=.*|SANCTUM_STATEFUL_DOMAINS=$MACHINE_IP:5173,$MACHINE_IP,$PUBLIC_DOMAIN|" back/src/.env
@@ -111,7 +111,7 @@ if [ ! -f "back/src/.env" ] || [ ! -f "judge0.conf" ] || [ ! -f "front/.env" ]; 
 
     # Frontend
     cp front/.env.example front/.env
-    sedi "s|VITE_API_URL=.*|VITE_API_URL=|" front/.env
+    sedi "s|VITE_API_URL=.*|VITE_API_URL=http://$MACHINE_IP:$APP_PORT|" front/.env
     sedi "s|VITE_WS_URL=.*|VITE_WS_URL=ws://$MACHINE_IP:3002|" front/.env
     sedi "s|VITE_APP_NAME=.*|VITE_APP_NAME=\"$APP_NAME\"|" front/.env
 else

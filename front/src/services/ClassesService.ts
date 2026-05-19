@@ -8,7 +8,7 @@ import type {
   AddStudentToClassDTO,
 } from "@/types/classes";
 
-const API_URL = import.meta.env?.VITE_API_URL || "";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
 
 const api = axios.create({
   baseURL: API_URL,
@@ -39,7 +39,7 @@ function handleAuthError(error: unknown) {
 
 // Interceptor para adicionar token se necessário
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("auth_token");
+  const token = localStorage.getItem("token");
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -49,7 +49,7 @@ api.interceptors.request.use((config) => {
 export const ClassesService = {
   // Listar todas as turmas
   getAllClasses: async (): Promise<Class[]> => {
-    const response = await api.get("/api/turmas", {
+    const response = await api.get("api/turmas", {
       headers:getAuthHeaders(),
       withCredentials:true
     });
@@ -58,7 +58,7 @@ export const ClassesService = {
 
   // Buscar turma por ID
   getClassById: async (id: number): Promise<Class> => {
-    const response = await api.get(`/api/turmas/${id}`, {
+    const response = await api.get(`api/turmas/${id}`, {
       headers:getAuthHeaders(),
       withCredentials:true
     });
@@ -67,7 +67,7 @@ export const ClassesService = {
 
   // Criar nova turma
   createClass: async (data: CreateClassDTO): Promise<Class> => {
-    const response = await api.post("/api/turmas", data, {
+    const response = await api.post("api/turmas", data, {
       headers:getAuthHeaders(),
       withCredentials:true
     });
@@ -76,7 +76,7 @@ export const ClassesService = {
 
   // Atualizar turma
   updateClass: async (id: number, data: UpdateClassDTO): Promise<Class> => {
-    const response = await api.put(`/api/turmas/${id}`, data, {
+    const response = await api.put(`api/turmas/${id}`, data, {
       headers:getAuthHeaders(),
       withCredentials:true
     });
@@ -85,7 +85,7 @@ export const ClassesService = {
 
   // Deletar turma
   deleteClass: async (id: number): Promise<void> => {
-    await api.delete(`/api/turmas/${id}`, {
+    await api.delete(`api/turmas/${id}`, {
       headers:getAuthHeaders(),
       withCredentials:true
     });
@@ -93,7 +93,7 @@ export const ClassesService = {
 
   // Buscar turmas de um professor
   getClassesByTeacher: async (): Promise<Class[]> => {
-    const response = await api.get(`/api/turmas`, {
+    const response = await api.get(`api/turmas`, {
       headers:getAuthHeaders(),
       withCredentials:true
     });
@@ -102,7 +102,7 @@ export const ClassesService = {
 
   // Buscar turmas de um aluno
   getClassesByStudent: async (): Promise<Class[]> => {
-    const response = await api.get(`/api/turmas`, {
+    const response = await api.get(`api/turmas`, {
       headers:getAuthHeaders(),
       withCredentials:true
     });
@@ -112,7 +112,7 @@ export const ClassesService = {
   // Buscar alunos de uma turma
   getClassStudents: async (id: number): Promise<ClassStudent[]> => {
     try {
-      const response = await api.get(`/api/turmas/${id}`, {
+      const response = await api.get(`api/turmas/${id}`, {
         headers: getAuthHeaders(),
         withCredentials: true
       });
@@ -139,7 +139,7 @@ export const ClassesService = {
   // Adicionar aluno a uma turma
   addStudentToClass: async (classId: number, data: AddStudentToClassDTO): Promise<void> => {
     try {
-      await api.post(`/api/turmas/${classId}/vincular-aluno/${data.studentId}`, {}, {
+      await api.post(`api/turmas/${classId}/vincular-aluno/${data.studentId}`, {}, {
         headers: getAuthHeaders(),
         withCredentials: true
       });
@@ -152,7 +152,7 @@ export const ClassesService = {
   // Remover aluno de uma turma
   removeStudentFromClass: async (classId: number, studentId: number): Promise<void> => {
     try {
-      await api.delete(`/api/turmas/${classId}/desvincular-aluno/${studentId}`, {
+      await api.delete(`api/turmas/${classId}/desvincular-aluno/${studentId}`, {
         headers: getAuthHeaders(),
         withCredentials: true
       });

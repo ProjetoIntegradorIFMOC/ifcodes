@@ -47,13 +47,13 @@ export default function Login() {
       localStorage.setItem("auth_token", token);
 
       const [userRes, rolesRes] = await Promise.all([
-        axios.get(`/api/user`, {
+        axios.get(`${import.meta.env.VITE_API_URL}/api/user`, {
           headers: {
             Authorization: `Bearer ${token}`,
             Accept: "application/json",
           },
         }),
-        axios.get(`/api/user/roles`, {
+        axios.get(`${import.meta.env.VITE_API_URL}/api/user/roles`, {
           headers: {
             Authorization: `Bearer ${token}`,
             Accept: "application/json",
