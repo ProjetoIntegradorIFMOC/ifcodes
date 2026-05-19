@@ -32,7 +32,7 @@ function handleAuthError(error: unknown) {
  */
 export async function getAllCourses(): Promise<Curso[]> {
   try {
-    const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/cursos`, {
+    const response = await axios.get(`/api/cursos`, {
       headers: getAuthHeaders(),
       withCredentials: true,
     });

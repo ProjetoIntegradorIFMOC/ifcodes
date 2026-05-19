@@ -4,12 +4,12 @@ import Cookies from "js-cookie";
 
 export async function login({ email, password }: LoginRequest): Promise<string>{
 
-    await axios.get(`${import.meta.env.VITE_API_URL}/sanctum/csrf-cookie`, {
+    await axios.get(`/sanctum/csrf-cookie`, {
         withCredentials: true
     });
 
 
-    const res = await axios.post(`${import.meta.env.VITE_API_URL}/login`, {
+    const res = await axios.post(`/login`, {
         email,
         password
     }, {
