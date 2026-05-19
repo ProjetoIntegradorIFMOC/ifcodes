@@ -109,10 +109,9 @@ function ProfileHeader({ user, setUser, setNotification }: ProfileHeaderProps) {
   const userInitial = displayName.charAt(0).toUpperCase();
 
   async function onSave() {
-    const token = localStorage.getItem("auth_token") || "";
     try {
       setSaving(true);
-      const data = await updateName(name, token);
+      const data = await updateName(name);
       setUser({ ...user, name: data.name });
       setEditing(false);
       setNotification({ type: "success", message: "Nome atualizado com sucesso." });

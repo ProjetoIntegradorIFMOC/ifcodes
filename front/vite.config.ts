@@ -12,7 +12,7 @@ export default defineConfig(({ mode }) => ({
     },
   },
   server: {
-    allowedHosts: ["localhost", "127.0.0.1"],
+    allowedHosts: ["localhost", "127.0.0.1", "192.168.1.111", "cleora-noncongratulatory-effortfully.ngrok-free.dev"],
     proxy: {
       '/api': {
         target: 'http://backend_app:8000',
