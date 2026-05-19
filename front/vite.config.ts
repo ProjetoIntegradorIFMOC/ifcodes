@@ -16,19 +16,19 @@ export default defineConfig(({ mode }) => ({
     proxy: {
       '/api': {
         target: 'http://backend_app:8000',
-        changeOrigin: false,
+        changeOrigin: true,
       },
       '/sanctum': {
         target: 'http://backend_app:8000',
-        changeOrigin: false,
+        changeOrigin: true,
       },
       '/login': {
         target: 'http://backend_app:8000',
-        changeOrigin: false,
+        changeOrigin: true,
       },
       '/logout': {
         target: 'http://backend_app:8000',
-        changeOrigin: false,
+        changeOrigin: true,
       },
     },
     watch: mode === "development" ? { usePolling: true } : undefined,
