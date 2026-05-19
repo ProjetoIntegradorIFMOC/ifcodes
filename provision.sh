@@ -96,13 +96,14 @@ if [ ! -f "back/src/.env" ] || [ ! -f "judge0.conf" ] || [ ! -f "front/.env" ]; 
         sedi "s|SESSION_DOMAIN=.*|SESSION_DOMAIN=|" back/src/.env
         sedi "s|SANCTUM_STATEFUL_DOMAINS=.*|SANCTUM_STATEFUL_DOMAINS=$MACHINE_IP:5173,$MACHINE_IP,$PUBLIC_DOMAIN|" back/src/.env
         sedi "s|FRONTEND_URL=.*|FRONTEND_URL=http://$MACHINE_IP:5173,https://$PUBLIC_DOMAIN|" back/src/.env
-        sedi "s|allowedHosts:.*|allowedHosts: [\"localhost\", \"127.0.0.1\", \"$PUBLIC_DOMAIN\"],|" front/vite.config.ts
+        sedi "s|allowedHosts:.*|allowedHosts: [\"localhost\", \"127.0.0.1\", \"$MACHINE_IP\", \"$PUBLIC_DOMAIN\"],|" front/vite.config.ts
         sedi "s|SESSION_SECURE_COOKIE=.*|SESSION_SECURE_COOKIE=true|" back/src/.env
         sedi "s|changeOrigin: false|changeOrigin: true|g" front/vite.config.ts
     else
         sedi "s|SESSION_DOMAIN=.*|SESSION_DOMAIN=$MACHINE_IP|" back/src/.env
         sedi "s|SANCTUM_STATEFUL_DOMAINS=.*|SANCTUM_STATEFUL_DOMAINS=$MACHINE_IP:5173,$MACHINE_IP|" back/src/.env
         sedi "s|FRONTEND_URL=.*|FRONTEND_URL=http://$MACHINE_IP:5173|" back/src/.env
+        sedi "s|allowedHosts:.*|allowedHosts: [\"localhost\", \"127.0.0.1\", \"$MACHINE_IP\"],|" front/vite.config.ts
     fi
 
     # Judge0
