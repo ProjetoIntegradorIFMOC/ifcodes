@@ -17,13 +17,13 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         const token = localStorage.getItem("auth_token");
         if (token) {
             Promise.all([
-                axios.get(`${import.meta.env.VITE_API_URL}/api/user`, {
+                axios.get(`/api/user`, {
                     headers: {
                         Authorization: `Bearer ${token}`,
                         Accept: "application/json"
                     }
                 }),
-                axios.get(`${import.meta.env.VITE_API_URL}/api/user/roles`, {
+                axios.get(`/api/user/roles`, {
                     headers: {
                         Authorization: `Bearer ${token}`,
                         Accept: "application/json"
